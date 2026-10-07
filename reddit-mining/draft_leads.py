@@ -30,12 +30,14 @@ import urllib.parse
 import urllib.request
 from collections import Counter
 
-from anthropic import Anthropic
-from dotenv import load_dotenv
+from pathlib import Path
+import sys
+import io
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.runtime import ROOT, DATA_ROOT, SETTINGS, anthropic_client, atomic_write, write_json
+from lib.opportunities import QualificationStore, validate_reddit
 
-load_dotenv()
-
-MODEL = "claude-opus-4-8"  # swap to "claude-haiku-4-5" to cut cost on large batches
+MODEL = SETTINGS["draftModel"]  # swap to "claude-haiku-4-5" to cut cost on large batches
 ARCTIC = "https://arctic-shift.photon-reddit.com/api"
 MIN_BUYER_SCORE = 55  # include in the final queue only at/above this
 
@@ -97,7 +99,7 @@ def arctic(kind, params):
             time.sleep(30 if e.code == 429 else 5)
         except Exception:
             time.sleep(5)
-    return []
+    raise RuntimeError("Reddit activity lookup failed after retries")
 
 
 def post_id_from_url(url):
@@ -115,8 +117,8 @@ def fetch_body(pid):
         with urllib.request.urlopen(req, timeout=30) as r:
             data = json.loads(r.read()).get("data", [])
             return (data[0].get("selftext") or "") if data else ""
-    except Exception:
-        return ""
+    except Exception as e:
+        raise RuntimeError("Reddit post lookup failed") from e
 
 
 def author_profile(author):
@@ -168,14 +170,18 @@ def qualify_and_draft(client, lead):
         messages=[{"role": "user", "content": prompt}],
     )
     text = "".join(b.text for b in resp.content if b.type == "text")
+    if resp.stop_reason == "max_tokens":
+        raise ValueError("Qualification response truncated")
     data = _parse_json(text)
-    return {
+    result = {
         **lead,
-        "is_buyer": bool(data.get("is_buyer")),
-        "buyer_score": int(data.get("buyer_score") or 0),
+        "is_buyer": data.get("is_buyer"),
+        "buyer_score": data.get("buyer_score"),
         "buyer_reason": data.get("reason", ""),
         "draft": data.get("draft_reply", ""),
     }
+    validate_reddit(result)
+    return result
 
 
 # ---- output builders (offline-testable) -------------------------------------
@@ -188,14 +194,15 @@ def write_outputs(records, out_csv, min_score):
     buyers = [r for r in records if r.get("is_buyer") and r.get("buyer_score", 0) >= min_score]
     buyers.sort(key=lambda x: x.get("buyer_score", 0), reverse=True)
 
-    with open(out_csv, "w", newline="", encoding="utf-8") as f:
+    with io.StringIO(newline="") as f:
         w = csv.DictWriter(f, fieldnames=CSV_FIELDS, extrasaction="ignore")
         w.writeheader()
         w.writerows(buyers)
-    json.dump(buyers, open(os.path.splitext(out_csv)[0] + ".json", "w"), indent=2)
+        atomic_write(out_csv, f.getvalue())
+    write_json(Path(out_csv).with_suffix(".json"), buyers)
 
-    md_path = "leads_drafts.md"
-    with open(md_path, "w", encoding="utf-8") as f:
+    md_path = str(Path(out_csv).with_suffix(".md"))
+    with io.StringIO() as f:
         f.write(f"# Ready-to-post replies — {len(buyers)} qualified buyers\n\n")
         f.write("Review each draft, tweak the voice to sound like you, then post from your account. Highest-confidence first.\n\n---\n\n")
         for i, r in enumerate(buyers, 1):
@@ -206,64 +213,50 @@ def write_outputs(records, out_csv, min_score):
             f.write("**Draft reply:**\n\n")
             draft = (r.get("draft") or "").strip()
             f.write("> " + draft.replace("\n", "\n> ") + "\n\n---\n\n")
+        atomic_write(md_path, f.getvalue())
     return len(buyers), buyers, md_path
 
 
 def main():
     global MODEL
     ap = argparse.ArgumentParser()
-    ap.add_argument("--leads", default="leads.json")
+    ap.add_argument("--leads", default=str(DATA_ROOT / "exports/reddit-mining/leads.json"))
+    ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--export-only", action="store_true")
     ap.add_argument("--limit", type=int, default=150, help="process the top N ranked leads")
-    ap.add_argument("--out", default="leads_drafted.csv")
+    ap.add_argument("--out", default=str(DATA_ROOT / "exports/reddit-mining/leads_drafted.csv"))
     ap.add_argument("--min-score", type=int, default=MIN_BUYER_SCORE)
     ap.add_argument("--model", default=MODEL)
     args = ap.parse_args()
 
     MODEL = args.model
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("Set ANTHROPIC_API_KEY (export it or put it in .env).")
-        return 1
-
-    leads = json.load(open(args.leads))[: args.limit]
-    ckpt = os.path.splitext(args.out)[0] + ".jsonl"
-
-    # resume: load already-processed records, skip their post ids
-    done = {}
-    if os.path.exists(ckpt):
-        for line in open(ckpt, encoding="utf-8"):
-            line = line.strip()
-            if line:
+    namespace = 'reddit:buyers'
+    store = QualificationStore(DATA_ROOT / 'state/opportunities.sqlite')
+    try:
+        store.import_legacy(namespace, Path(__file__).with_name('leads_drafted.jsonl'))
+        if not args.resume and not args.export_only:
+            store.ingest(namespace, json.loads(Path(args.leads).read_text())[:args.limit])
+        failures = 0
+        if not args.export_only:
+            pending = store.pending(namespace)[:args.limit]
+            client = anthropic_client() if pending else None
+            for i, lead in enumerate(pending, 1):
                 try:
-                    rec = json.loads(line)
-                    done[rec.get("url", "")] = rec
-                except ValueError:
-                    pass
-
-    client = Anthropic()
-    records = list(done.values())
-    ckpt_fh = open(ckpt, "a", encoding="utf-8")
-    todo = [ld for ld in leads if ld.get("url", "") not in done]
-    print(f"{len(done)} already done · {len(todo)} to process (top {args.limit})\n")
-
-    for i, lead in enumerate(todo, 1):
-        try:
-            rec = qualify_and_draft(client, lead)
-        except Exception as e:
-            rec = {**lead, "is_buyer": False, "buyer_score": 0,
-                   "buyer_reason": f"error: {e}", "draft": ""}
-        records.append(rec)
-        ckpt_fh.write(json.dumps(rec) + "\n")
-        ckpt_fh.flush()
-        tag = f"BUYER {rec['buyer_score']:>3}" if rec.get("is_buyer") else "  skip   "
-        print(f"  {i}/{len(todo)}  {tag}  r/{rec.get('subreddit',''):<18} {rec.get('title','')[:46]}")
-        time.sleep(0.2)
-
-    ckpt_fh.close()
-    n, _, md_path = write_outputs(records, args.out, args.min_score)
-    print(f"\n{n} qualified buyers -> {args.out} / {md_path}")
-    print(f"Open {md_path} for the copy-paste queue.")
-    return 0
+                    record = qualify_and_draft(client, lead)
+                    store.complete(namespace, record)
+                except Exception as e:
+                    store.fail(namespace, lead, e)
+                    failures += 1
+                    print(f"Retryable qualification failure: {e}", file=sys.stderr)
+                print(f"Processed {i}/{len(pending)}")
+        n, _, md_path = write_outputs(store.results(namespace), args.out, args.min_score)
+        print(f"{n} qualified buyers -> {md_path}")
+        if failures:
+            print(f"{failures} leads need retry; rerun with --resume", file=sys.stderr)
+        return 1 if failures else 0
+    finally:
+        store.close()
 
 
 if __name__ == "__main__":

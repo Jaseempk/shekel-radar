@@ -7,6 +7,11 @@ Usage:
     python3 find_leads.py --data ./data --out leads.csv      # posts-only, fast
     python3 check_sellers.py --leads leads.json --out leads.csv
 """
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.runtime import ROOT, DATA_ROOT
+
 import argparse
 import csv
 import json
@@ -45,23 +50,30 @@ def fetch_comments(pid):
             time.sleep(30 if e.code == 429 else 5)
         except Exception:
             time.sleep(5)
-    return []
+    raise RuntimeError("Seller lookup unavailable after retries")
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--leads", default="leads.json")
-    ap.add_argument("--out", default="leads.csv")
+    ap.add_argument("--leads", default=str(DATA_ROOT / "exports/reddit-mining/leads.json"))
+    ap.add_argument("--out", default=str(DATA_ROOT / "exports/reddit-mining/leads.csv"))
     ap.add_argument("--keep-contested", action="store_true", help="flag instead of drop")
     args = ap.parse_args()
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
 
     leads = json.load(open(args.leads))
     kept = []
+    failures = []
     for i, ld in enumerate(leads, 1):
         pid = post_id_from_url(ld.get("url", ""))
         seller = False
         if pid:
-            comments = fetch_comments(pid)
+            try:
+                comments = fetch_comments(pid)
+            except Exception as e:
+                failures.append({**ld, 'seller_check': 'unknown', 'error': str(e)})
+                print(f"  seller check unavailable: {pid}")
+                continue
             ld["num_comments"] = len(comments)
             seller = any(any(s in (c.get("body") or "").lower() for s in SELLER) for c in comments)
             time.sleep(0.5)  # ~2 req/s
@@ -81,7 +93,10 @@ def main():
         w.writerows(kept)
     json.dump(kept, open(os.path.splitext(args.out)[0] + ".json", "w"), indent=2)
     print(f"\n{len(kept)}/{len(leads)} leads survived the seller check -> {args.out}")
-    return 0
+    if failures:
+        json.dump(failures, open(os.path.splitext(args.out)[0] + '.retry.json', 'w'), indent=2)
+        print(f"{len(failures)} unchecked leads saved for retry (not labelled clean)")
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":

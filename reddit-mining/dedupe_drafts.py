@@ -6,6 +6,11 @@ in seconds on what you already have.
 
 Usage: python3 dedupe_drafts.py
 """
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.runtime import ROOT, DATA_ROOT
+
 import argparse
 import json
 from collections import Counter
@@ -16,9 +21,10 @@ from draft_leads import write_outputs    # reuse the same output builder
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--in", dest="inp", default="leads_drafted.json")
-    ap.add_argument("--out", default="leads_drafted.csv")
+    ap.add_argument("--in", dest="inp", default=str(DATA_ROOT / "exports/reddit-mining/leads_drafted.json"))
+    ap.add_argument("--out", default=str(DATA_ROOT / "exports/reddit-mining/leads_drafted.csv"))
     args = ap.parse_args()
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
 
     recs = json.load(open(args.inp, encoding="utf-8"))
     counts = Counter(title_signature(r.get("title", "")) for r in recs)

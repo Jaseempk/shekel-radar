@@ -18,12 +18,13 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { apiKey, settings, statePath, exportPath, atomicWrite, option, integerOption } from '../lib/runtime.mjs';
 import { OpportunityStore, qualifyPending } from '../lib/opportunities.mjs';
 import { modelJSON } from '../lib/qualification.mjs';
 
-const HERE = path.dirname(new URL(import.meta.url).pathname);
-const CDP_URL = 'http://127.0.0.1:9222';
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+import { openTab, sleep } from '../lib/cdp.mjs';
 const SEARCH_FILE = option('--searches', 'searches.json');
 const __pack = path.basename(SEARCH_FILE, '.json').replace(/^searches-?/, '');
 const SEEN_PATH = path.join(HERE, __pack ? `seen_${__pack}.json` : 'seen.json');
@@ -75,46 +76,13 @@ function dayStamp(offset) {
 }
 
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-/**
- * Minimal CDP client over a fresh tab. Playwright's connectOverCDP attaches to
- * every target in the browser (service workers, extensions, iframes) and hangs
- * when any of them fails to handshake; this only ever touches its own tab.
- */
-async function openTab() {
-  const target = await (await fetch(`${CDP_URL}/json/new?about:blank`, { method: 'PUT' })).json();
-  const ws = new WebSocket(target.webSocketDebuggerUrl);
-  await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
-
-  let id = 0;
-  const pending = new Map();
-  const listeners = [];
-  ws.onmessage = (m) => {
-    const d = JSON.parse(m.data);
-    if (d.id && pending.has(d.id)) { pending.get(d.id)(d.result ?? {}); pending.delete(d.id); }
-    else if (d.method) listeners.forEach((fn) => fn(d));
-  };
-  const send = (method, params = {}) => new Promise((res) => {
-    const mid = ++id;
-    pending.set(mid, res);
-    ws.send(JSON.stringify({ id: mid, method, params }));
-    setTimeout(() => { if (pending.delete(mid)) res({}); }, 30000);
-  });
-  const close = async () => {
-    try { ws.close(); } catch {}
-    try { await fetch(`${CDP_URL}/json/close/${target.id}`); } catch {}
-  };
-  return { send, on: (fn) => listeners.push(fn), close };
-}
-
 async function runSearches() {
   // --searches <file>: alternate search pack (e.g. searches-jobs.json). Default: searches.json
   const sIdx = process.argv.indexOf('--searches');
   const searchFile = SEARCH_FILE;
   const pack = JSON.parse(fs.readFileSync(path.join(HERE, searchFile), 'utf8'));
   const baseQueries = pack.queries;
-  globalThis.__rubric = pack.rubric || null;
+  globalThis.__rubric = pack.rubric?.replaceAll('{{candidateLocation}}', settings.candidateLocation) || null;
 
   // --backfill N: walk each query back N day-windows (one-time harvest).
   // Normal runs use the plain live search (the newest slice).
@@ -131,7 +99,8 @@ async function runSearches() {
     queries = baseQueries;
   }
 
-  const { send, on, close } = await openTab();
+  const { send, on, close, drain } = await openTab();
+  try {
   await send('Network.enable');
   await send('Page.enable');
   const found = new Map();
@@ -146,7 +115,7 @@ async function runSearches() {
     if (msg.method === 'Network.loadingFinished' && wanted.has(msg.params.requestId)) {
       wanted.delete(msg.params.requestId);
       const r = await send('Network.getResponseBody', { requestId: msg.params.requestId });
-      if (r && r.body) { try { extractTweets(JSON.parse(r.body), found); } catch { /* not JSON */ } }
+      if (r && r.body) { try { extractTweets(JSON.parse(r.base64Encoded ? Buffer.from(r.body, 'base64').toString() : r.body), found); } catch { /* not JSON */ } }
     }
   });
 
@@ -164,8 +133,9 @@ async function runSearches() {
     console.log(`+${found.size - before} tweets`);
     if (i < queries.length - 1) await sleep(PAUSE_BETWEEN_SEARCHES());
   }
-  await close();
+  await drain();
   return [...found.values()];
+  } finally { await close(); }
 }
 
 async function scoreBatch(batch, key) {
@@ -187,7 +157,7 @@ Tweets:\n${listing}`;
   return modelJSON(prompt, { key, model: MODEL });
 }
 
-async function main() {
+export async function main() {
   if (process.argv.includes('--help')) {
     console.log('X radar: --searches FILE --max-age-days N --max-replies N --input JSON --resume --export-only --day YYYY-MM-DD'); return;
   }
@@ -196,7 +166,7 @@ async function main() {
   try {
     store.importLegacy(namespace, SEEN_PATH);
     const pack = JSON.parse(fs.readFileSync(path.resolve(HERE, SEARCH_FILE), 'utf8'));
-    globalThis.__rubric = pack.rubric || null;
+    globalThis.__rubric = pack.rubric?.replaceAll('{{candidateLocation}}', settings.candidateLocation) || null;
     let failures = 0;
     if (!process.argv.includes('--export-only')) {
       const tweets = process.argv.includes('--resume') ? [] : option('--input')
@@ -229,4 +199,6 @@ async function main() {
   } finally { store.close(); }
 }
 
-main().catch((e) => { console.error(e.message); process.exit(1); });
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(e => { console.error(e.message); process.exitCode = 1; });
+}

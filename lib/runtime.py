@@ -3,8 +3,25 @@ from pathlib import Path
 import json
 import os
 import tempfile
+import re
 
 ROOT = Path(__file__).resolve().parent.parent
+def load_env_file(file):
+    if not file.exists():
+        return
+    for line in file.read_text().splitlines():
+        match = re.match(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$", line)
+        if not match or match[1] in os.environ:
+            continue
+        raw = match[2].strip()
+        if raw.startswith(('"', "'")):
+            raw = raw[1:raw.find(raw[0], 1)]
+        else:
+            raw = re.split(r"\s+#", raw)[0].strip()
+        os.environ[match[1]] = raw
+
+
+load_env_file(ROOT / '.env')
 DATA_ROOT = Path(os.environ.get('INCOME_DATA_DIR', ROOT)).resolve()
 SETTINGS = json.loads((ROOT / 'config/settings.json').read_text())
 
@@ -31,9 +48,7 @@ def write_json(path, value):
 def load_credentials():
     if os.environ.get('ANTHROPIC_API_KEY'):
         return
-    from dotenv import load_dotenv
-    load_dotenv(ROOT / '.env', override=False)
-    load_dotenv(ROOT / 'reddit-mining/.env', override=False)
+    load_env_file(ROOT / 'reddit-mining/.env')
 
 
 def anthropic_client():

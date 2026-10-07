@@ -1,110 +1,56 @@
-/**
- * ATS radar — pull open roles straight from companies' applicant tracking systems.
- *
- * Job boards aggregate with a lag and miss small companies entirely. Every ATS
- * below exposes an unauthenticated JSON endpoint per company board, so once you
- * know a company's slug you see its roles the moment they are posted.
- *
- * Run:  node poll.mjs                    # all companies in companies.json
- *       node poll.mjs --remote-only      # drop roles with no remote signal
- *       node poll.mjs --match "engineer" # title filter
- *       node poll.mjs --new              # only roles unseen since last run
- *
- * Output: roles_YYYY-MM-DD.md + seen.json
- */
+/** Poll supported company boards. Always retain full observations; --new changes only the notification view. */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { fetchBoard } from '../lib/ats.mjs';
+import { JobStore } from '../lib/jobs.mjs';
+import { statePath, exportPath, atomicWrite, option, runStamp } from '../lib/runtime.mjs';
 
-const HERE = path.dirname(new URL(import.meta.url).pathname);
-const SEEN = path.join(HERE, 'seen.json');
-const argv = process.argv.slice(2);
-const flag = (f) => argv.includes(f);
-const val = (f, d) => { const i = argv.indexOf(f); return i > -1 ? argv[i + 1] : d; };
-
-const ENDPOINTS = {
-  greenhouse: (s) => `https://boards-api.greenhouse.io/v1/boards/${s}/jobs`,
-  ashby: (s) => `https://api.ashbyhq.com/posting-api/job-board/${s}`,
-  lever: (s) => `https://api.lever.co/v0/postings/${s}?mode=json`,
-  workable: (s) => `https://apply.workable.com/api/v1/widget/accounts/${s}?details=true`,
-  recruitee: (s) => `https://${s}.recruitee.com/api/offers/`,
-};
-
-// Each ATS shapes its payload differently; normalise to {title, location, url, remote}.
-const PARSE = {
-  greenhouse: (d) => (d.jobs ?? []).map((j) => ({
-    title: j.title, location: j.location?.name ?? '', url: j.absolute_url,
-  })),
-  ashby: (d) => (d.jobs ?? []).map((j) => ({
-    title: j.title, location: j.location ?? '', url: j.jobUrl ?? j.applyUrl ?? '',
-  })),
-  lever: (d) => (Array.isArray(d) ? d : []).map((j) => ({
-    title: j.text, location: j.categories?.location ?? '', url: j.hostedUrl,
-  })),
-  workable: (d) => (d.jobs ?? []).map((j) => ({
-    title: j.title, location: [j.city, j.country].filter(Boolean).join(', '), url: j.url,
-  })),
-  recruitee: (d) => (d.offers ?? []).map((j) => ({
-    title: j.title, location: j.location ?? '', url: j.careers_url,
-  })),
-};
-
-const REMOTE_RE = /remote|anywhere|worldwide|global|distributed|emea|apac|any timezone/i;
-// Locations that rule this candidate out regardless of the word "remote".
-const EXCLUDE_RE = /united states only|us only|usa only|onsite|on-site|hybrid/i;
-
-async function fetchBoard(c) {
-  const url = ENDPOINTS[c.ats]?.(c.slug);
-  if (!url) return { ...c, error: `unknown ats: ${c.ats}` };
+export async function main() {
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const flag = f => process.argv.includes(f);
+if (flag('--help')) {
+  console.log('ATS poll: --companies FILE --remote-only --match TEXT --new --export-only');
+} else {
+  const { companies } = JSON.parse(fs.readFileSync(option('--companies', path.join(HERE, 'companies.json')), 'utf8'));
+  const store = new JobStore(statePath('opportunities.sqlite'));
   try {
-    const r = await fetch(url, { headers: { 'User-Agent': 'job-search/1.0' }, signal: AbortSignal.timeout(20000) });
-    if (!r.ok) return { ...c, error: `HTTP ${r.status}` };
-    return { ...c, roles: PARSE[c.ats](await r.json()) };
-  } catch (e) {
-    return { ...c, error: e.message.slice(0, 60) };
-  }
+    if (!flag('--export-only')) {
+      for (let i = 0; i < companies.length; i += 5) {
+        await Promise.all(companies.slice(i, i + 5).map(async c => {
+          try { store.record(c, await fetchBoard(c.ats, c.slug)); }
+          catch (e) { store.record(c, null, e.message); }
+        }));
+        await new Promise(r => setTimeout(r, 400));
+      }
+    }
+    const { rows, errors } = store.snapshot(companies);
+    const stamp = runStamp();
+    // Full snapshots are always available to rank.mjs, including during --new runs.
+    atomicWrite(exportPath('ats-radar', `roles_${stamp}.json`), JSON.stringify(rows, null, 2));
+    atomicWrite(exportPath('ats-radar', `roles_${stamp}.status.json`), JSON.stringify({ errors, collected: new Date().toISOString() }, null, 2));
+    const legacyFile = path.join(HERE, 'seen.json');
+    const legacy = new Set(fs.existsSync(legacyFile) ? JSON.parse(fs.readFileSync(legacyFile, 'utf8')) : []);
+    store.importLegacy(rows, legacy);
+    const remote = r => r.remote || /remote|anywhere|worldwide|global|distributed/i.test(`${r.location} ${r.title}`);
+    let selected = rows.filter(r => r.collectionStatus === 'ok');
+    if (flag('--remote-only')) selected = selected.filter(remote);
+    const match = option('--match', '').toLowerCase();
+    if (match) selected = selected.filter(r => r.title.toLowerCase().includes(match));
+    if (flag('--new')) selected = store.unseen(selected);
+    const stem = `${flag('--new') ? 'new_roles' : 'roles'}_${stamp}`;
+    if (flag('--new')) atomicWrite(exportPath('ats-radar', stem + '.json'), JSON.stringify(selected, null, 2));
+    const lines = [`# ATS roles — ${selected.length} selected`, '', ...selected.map(r => `- **${r.company}: ${r.title}** · ${r.location || 'unknown'}\n  ${r.url}`)];
+    const out = exportPath('ats-radar', stem + '.md');
+    atomicWrite(out, lines.join('\n') + '\n');
+    // Only acknowledge notifications after their view was successfully written.
+    store.notified(selected);
+    console.log(`${selected.length} selected; ${rows.length} retained -> ${out}`);
+    if (errors.length) { console.error(`${errors.length} boards failed; retained observations are marked stale`); process.exitCode = 1; }
+  } finally { store.close(); }
 }
 
-const { companies } = JSON.parse(fs.readFileSync(path.join(HERE, 'companies.json'), 'utf8'));
-const seen = fs.existsSync(SEEN) ? new Set(JSON.parse(fs.readFileSync(SEEN, 'utf8'))) : new Set();
-
-// Modest concurrency: these are other people's servers.
-const results = [];
-for (let i = 0; i < companies.length; i += 5) {
-  results.push(...await Promise.all(companies.slice(i, i + 5).map(fetchBoard)));
-  await new Promise((r) => setTimeout(r, 400));
 }
-
-const match = val('--match', '').toLowerCase();
-let rows = [];
-let errors = [];
-for (const r of results) {
-  if (r.error) { errors.push(`${r.name}: ${r.error}`); continue; }
-  for (const role of r.roles) {
-    const loc = role.location || '';
-    const remote = REMOTE_RE.test(loc) || REMOTE_RE.test(role.title);
-    if (flag('--remote-only') && (!remote || EXCLUDE_RE.test(loc))) continue;
-    if (match && !role.title.toLowerCase().includes(match)) continue;
-    const id = `${r.name}::${role.title}::${loc}`;
-    if (flag('--new') && seen.has(id)) continue;
-    rows.push({ company: r.name, ...role, remote, id });
-  }
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(e => { console.error(e.message); process.exitCode = 1; });
 }
-
-rows.forEach((r) => seen.add(r.id));
-fs.writeFileSync(SEEN, JSON.stringify([...seen]));
-
-const day = new Date().toISOString().slice(0, 10);
-const out = path.join(HERE, `roles_${day}.md`);
-const byCompany = {};
-for (const r of rows) (byCompany[r.company] ??= []).push(r);
-const lines = [`# ATS roles — ${day} — ${rows.length} roles across ${Object.keys(byCompany).length} companies\n`];
-for (const [company, list] of Object.entries(byCompany)) {
-  lines.push(`## ${company}`);
-  for (const r of list) lines.push(`- **${r.title}** · ${r.location || 'no location'}${r.remote ? ' · REMOTE' : ''}\n  ${r.url}`);
-  lines.push('');
-}
-fs.writeFileSync(out, lines.join('\n'));
-fs.writeFileSync(out.replace(/\.md$/, '.json'), JSON.stringify(rows, null, 2));
-
-console.log(`${rows.length} roles across ${Object.keys(byCompany).length} companies -> ${path.basename(out)}`);
-if (errors.length) console.log(`\n${errors.length} board(s) failed (wrong slug or private):\n  ` + errors.join('\n  '));

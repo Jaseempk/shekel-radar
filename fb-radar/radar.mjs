@@ -12,12 +12,13 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { apiKey, settings, statePath, exportPath, atomicWrite, option, integerOption } from '../lib/runtime.mjs';
 import { OpportunityStore, qualifyPending } from '../lib/opportunities.mjs';
 import { modelJSON } from '../lib/qualification.mjs';
 import { openTab, captureGraphql, sleep } from './cdp.mjs';
 
-const HERE = path.dirname(new URL(import.meta.url).pathname);
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACK_FILE = option('--searches', 'searches.json');
 const PACK = path.basename(PACK_FILE, '.json').replace(/^searches-?/, '');
 const TAG = PACK ? `_${PACK}` : '';
@@ -70,6 +71,7 @@ function parseBodies(bodies, sink) {
 
 async function runSearches(queries) {
   const tab = await openTab();
+  try {
   await tab.send('Network.enable');
   const found = new Map();
   for (const [i, q] of queries.entries()) {
@@ -90,13 +92,15 @@ async function runSearches(queries) {
       expression: '[...document.querySelectorAll(\'script[type="application/json"]\')].map(s => s.textContent).filter(t => t.includes("SearchPostViewModel")).join("\\n")',
       returnByValue: true,
     });
+    await tab.drain();
     stop();
     parseBodies([...bodies, ssr.result?.value ?? ''], found);
     console.log(`+${found.size - before} posts`);
     if (i < queries.length - 1) await sleep(PAUSE());
   }
-  await tab.close();
+  await tab.drain();
   return [...found.values()];
+  } finally { await tab.close(); }
 }
 
 /** Parse group search results: id, name, url, public/private, members, posts per day. */
@@ -131,14 +135,17 @@ async function loadPage(tab, url, scrolls) {
     expression: '[...document.querySelectorAll(\'script[type="application/json"]\')].map(s => s.textContent).filter(t => t.includes("serpResponse") || t.includes("SearchPostViewModel")).join("\\n")',
     returnByValue: true,
   });
+  await tab.drain();
   stop();
   return [...bodies, ssr.result?.value ?? ''];
 }
 
-const REGISTRY = path.join(HERE, 'groups_registry.json');
+const REGISTRY = statePath('facebook-groups.json');
+const LEGACY_REGISTRY = path.join(HERE, 'groups_registry.json');
 
 async function discoverGroups(tab, pack) {
-  const reg = fs.existsSync(REGISTRY) ? JSON.parse(fs.readFileSync(REGISTRY, 'utf8')) : {};
+  const regFile = fs.existsSync(REGISTRY) ? REGISTRY : LEGACY_REGISTRY;
+  const reg = fs.existsSync(regFile) ? JSON.parse(fs.readFileSync(regFile, 'utf8')) : {};
   for (const niche of pack.niches) {
     if (reg[niche] && !process.argv.includes('--rediscover')) continue;
     const sink = new Map();
@@ -147,7 +154,7 @@ async function discoverGroups(tab, pack) {
     reg[niche] = [...sink.values()].filter((g) => g.public && g.members >= (pack.minMembers ?? 5000))
       .sort((a, b) => (b.perDay - a.perDay) || (b.members - a.members)).slice(0, pack.groupsPerNiche ?? 2);
     console.log(`groups for "${niche}": ${reg[niche].map((g) => `${g.name} (${g.snippet})`).join(' ; ') || 'none public'}`);
-    fs.writeFileSync(REGISTRY, JSON.stringify(reg, null, 2));
+    atomicWrite(REGISTRY, JSON.stringify(reg, null, 2));
     await sleep(PAUSE());
   }
   const all = new Map();
@@ -157,6 +164,7 @@ async function discoverGroups(tab, pack) {
 
 async function runGroupSearches(pack) {
   const tab = await openTab();
+  try {
   await tab.send('Network.enable');
   const groups = await discoverGroups(tab, pack);
   const found = new Map();
@@ -174,17 +182,13 @@ async function runGroupSearches(pack) {
       await sleep(5000 + Math.random() * 6000);
     }
   }
-  await tab.close();
+  await tab.drain();
   return [...found.values()];
+  } finally { await tab.close(); }
 }
 
-// captureGraphql never unsubscribes, so gate it per search.
 function captureInto(tab, bodies) {
-  let on = true;
-  const sink = { push: (x) => on && bodies.push(x.body) };
-  if (!tab.__hooked) { tab.__sinks = []; captureGraphql(tab, { push: (x) => tab.__sinks.forEach((s) => s.push(x)) }); tab.__hooked = true; }
-  tab.__sinks.push(sink);
-  return () => { on = false; };
+  return captureGraphql(tab, { push: value => bodies.push(value.body) });
 }
 
 const DEFAULT_RUBRIC = `You qualify sales leads for a freelance AI-automation consultant (Jaseem). His offers: lead research/enrichment/scoring pipelines into a CRM, internal document assistants (RAG), and workflow automation (Zapier, Make, n8n, CRM setup, integrations, AI agents) for business teams.
@@ -198,7 +202,7 @@ Mark buyer=false for:
 - posts asking for a human VA to do manual tasks where automation is not plausible
 - crypto, MLM, adult, or obviously scammy posts
 
-Separately, set "job": true when the post is a company or founder hiring an AI/automation/integration/full-stack engineer (employee or contractor) and the role is plausibly open to someone remote in Kazakhstan (UTC+5); country-locked roles (e.g. "Philippines only") are job=false. Job posts are buyer=false.
+Separately, set "job": true when the post is a company or founder hiring an AI/automation/integration/full-stack engineer (employee or contractor) and the role is plausibly open to someone remote in ${settings.candidateLocation}; country-locked roles (e.g. "Philippines only") are job=false. Job posts are buyer=false.
 
 Score (0-100) = how likely a short, helpful message leads to a paid project: explicit hiring intent and concrete scope score highest; vague curiosity lowest.`;
 
@@ -208,7 +212,7 @@ async function scoreBatch(batch, key, rubric) {
   return modelJSON(prompt, { key, model: MODEL });
 }
 
-async function main() {
+export async function main() {
   if (process.argv.includes('--help')) {
     console.log('Facebook radar: --searches FILE --max-age-days N --limit N --dry --input JSON --resume --export-only --day YYYY-MM-DD'); return;
   }
@@ -269,4 +273,6 @@ async function main() {
   } finally { store.close(); }
 }
 
-main().catch((e) => { console.error(e.message); process.exit(1); });
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(e => { console.error(e.message); process.exitCode = 1; });
+}

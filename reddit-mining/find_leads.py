@@ -8,6 +8,11 @@ to. Outputs leads.csv / leads.json ranked best-first, deduped by author.
 Stdlib only — no pip install. Run:
     python3 find_leads.py --data ./data --max-comments 5 --out leads.csv
 """
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.runtime import ROOT, DATA_ROOT
+
 import argparse
 import csv
 from collections import Counter
@@ -157,15 +162,16 @@ def load_comments(data_dir):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default="./data", help="dir of *_posts.jsonl files")
-    ap.add_argument("--subreddits-file", default="subreddits.json")
+    ap.add_argument("--data", default=str(DATA_ROOT / "data/raw/reddit"), help="dir of *_posts.jsonl files")
+    ap.add_argument("--subreddits-file", default=str(ROOT / "reddit-mining/subreddits.json"))
     ap.add_argument("--max-comments", type=int, default=5, help="uncontested threshold")
     ap.add_argument("--min-age-hours", type=float, default=0.0, help="skip posts newer than N hours (0 = include all; actual comment counts keep fresh posts safe)")
     ap.add_argument("--max-age-days", type=float, default=0.0, help="skip posts older than N days (0 = include all)")
     ap.add_argument("--include-contested", action="store_true", help="keep worked posts too")
-    ap.add_argument("--out", default="leads.csv")
+    ap.add_argument("--out", default=str(DATA_ROOT / "exports/reddit-mining/leads.csv"))
     ap.add_argument("--top", type=int, default=25)
     args = ap.parse_args()
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
 
     weights = load_weights(args.subreddits_file)
     worked, actual_counts, subs_with_comments = load_comments(args.data)
