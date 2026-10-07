@@ -1,0 +1,13 @@
+{
+  "name": "income-system",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.22.0" },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs && python3 -m unittest discover -s tests -p 'test_*.py'",
+    "radar:x": "node x-radar/radar.mjs",
+    "radar:facebook": "node fb-radar/radar.mjs",
+    "jobs": "node ats-radar/poll.mjs",
+    "buyers": "node buyer-signals/workable.mjs"
+  }
+}

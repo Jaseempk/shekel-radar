@@ -12,16 +12,18 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { apiKey, settings, statePath, exportPath, atomicWrite, option, integerOption } from '../lib/runtime.mjs';
+import { OpportunityStore, qualifyPending } from '../lib/opportunities.mjs';
+import { modelJSON } from '../lib/qualification.mjs';
 import { openTab, captureGraphql, sleep } from './cdp.mjs';
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
-const PACK_FILE = (() => { const i = process.argv.indexOf('--searches'); return i > -1 ? process.argv[i + 1] : 'searches.json'; })();
+const PACK_FILE = option('--searches', 'searches.json');
 const PACK = path.basename(PACK_FILE, '.json').replace(/^searches-?/, '');
 const TAG = PACK ? `_${PACK}` : '';
 const SEEN_PATH = path.join(HERE, 'seen.json');
-const ENV_PATH = path.join(HERE, '..', 'reddit-mining', '.env');
-const MODEL = 'claude-haiku-4-5';
-const MIN_SCORE = 55;
+const MODEL = process.env.INCOME_SOCIAL_MODEL || settings.socialModel;
+const MIN_SCORE = settings.minimumBuyerScore;
 const argVal = (f, d) => { const i = process.argv.indexOf(f); return i > -1 ? process.argv[i + 1] : d; };
 const MAX_AGE_DAYS = parseInt(argVal('--max-age-days', '45'), 10);
 const SCROLLS = 3;
@@ -31,7 +33,7 @@ const PAUSE = () => 9000 + Math.random() * 12000;
 const RECENT = Buffer.from(JSON.stringify({ 'recent_posts:0': JSON.stringify({ name: 'recent_posts', args: '' }) })).toString('base64');
 
 const cut = (s, n) => Array.from(s ?? '').slice(0, n).join('').toWellFormed();
-const apiKey = () => fs.readFileSync(ENV_PATH, 'utf8').match(/ANTHROPIC_API_KEY\s*=\s*(\S+)/)[1];
+
 
 /** Walk any JSON blob and pull out search-result posts. */
 function extractPosts(node, sink) {
@@ -203,56 +205,41 @@ Score (0-100) = how likely a short, helpful message leads to a paid project: exp
 async function scoreBatch(batch, key, rubric) {
   const listing = batch.map((p, i) => `[${i}] ${p.author} (${p.author_type}) in ${p.group_name || p.group || 'personal/page feed'}${p.niche ? ` (${p.niche})` : ''}\n${p.text}`).join('\n---\n');
   const prompt = `${rubric}\n\nReturn ONLY a JSON array, one object per post: {"i": <index>, "score": 0-100, "buyer": true/false, "job": true/false, "offer": "B"|"A"|"ops", "reason": "<one line>", "pain": "<one line, or empty>", "aware": true/false, "angle": "<one line: what a genuinely helpful reply would address>"}.\n\nPosts:\n${listing}`;
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: 4000, messages: [{ role: 'user', content: prompt }] }),
-  });
-  if (!resp.ok) throw new Error('Anthropic API ' + resp.status + ': ' + (await resp.text()).slice(0, 200));
-  const text = (await resp.json()).content?.[0]?.text ?? '[]';
-  return JSON.parse(text.slice(text.indexOf('['), text.lastIndexOf(']') + 1));
+  return modelJSON(prompt, { key, model: MODEL });
 }
 
 async function main() {
-  const key = apiKey();
-  const pack = JSON.parse(fs.readFileSync(path.join(HERE, PACK_FILE), 'utf8'));
+  if (process.argv.includes('--help')) {
+    console.log('Facebook radar: --searches FILE --max-age-days N --limit N --dry --input JSON --resume --export-only --day YYYY-MM-DD'); return;
+  }
+  const pack = JSON.parse(fs.readFileSync(path.resolve(HERE, PACK_FILE), 'utf8'));
   const { queries = [], rubric = DEFAULT_RUBRIC } = pack;
-  const maxAge = parseInt(argVal('--max-age-days', String(pack.maxAgeDays ?? MAX_AGE_DAYS)), 10);
-  const seen = fs.existsSync(SEEN_PATH) ? new Set(JSON.parse(fs.readFileSync(SEEN_PATH, 'utf8'))) : new Set();
-
-  const limit = parseInt(argVal('--limit', '0'), 10);
-  const posts = pack.mode === 'groups'
-    ? await runGroupSearches(limit ? { ...pack, niches: pack.niches.slice(0, limit) } : pack)
-    : await runSearches(limit ? queries.slice(0, limit) : queries);
-  if (process.argv.includes('--dry')) {
-    for (const p of posts) console.log(new Date(p.created * 1000).toISOString().slice(0, 10), p.group || 'feed', '|', p.author, '|', p.text.slice(0, 90).replace(/\n/g, ' '));
-    return;
-  }
-  const cutoff = Date.now() / 1000 - maxAge * 86400;
-  let fresh = posts.filter((p) => !seen.has(p.id));
-  const stale = fresh.filter((p) => p.created && p.created < cutoff);
-  stale.forEach((p) => seen.add(p.id));
-  fresh = fresh.filter((p) => !(p.created && p.created < cutoff));
-  console.log(`\n${posts.length} captured, ${fresh.length} new and recent (${stale.length} older than ${maxAge} days skipped).`);
-
-  const scored = [];
-  for (let i = 0; i < fresh.length; i += 20) {
-    const batch = fresh.slice(i, i + 20);
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        for (const v of await scoreBatch(batch, key, rubric)) if (batch[v.i]) scored.push({ ...batch[v.i], ...v });
-        batch.forEach((p) => seen.add(p.id));
-        break;
-      } catch (e) { console.error(`scoring batch failed (attempt ${attempt}/2):`, e.message); }
+  const maxAge = integerOption('--max-age-days', pack.maxAgeDays ?? 45, 1);
+  const namespace = `facebook:${PACK || 'buyers'}`;
+  const store = new OpportunityStore(statePath('opportunities.sqlite'));
+  try {
+    store.importLegacy(namespace, SEEN_PATH);
+    let failures = 0;
+    if (!process.argv.includes('--export-only')) {
+      const limit = integerOption('--limit', 0);
+      const posts = process.argv.includes('--resume') ? [] : option('--input')
+        ? JSON.parse(fs.readFileSync(path.resolve(option('--input')), 'utf8'))
+        : pack.mode === 'groups'
+          ? await runGroupSearches(limit ? { ...pack, niches: pack.niches.slice(0, limit) } : pack)
+          : await runSearches(limit ? queries.slice(0, limit) : queries);
+      if (process.argv.includes('--dry')) { console.log(JSON.stringify(posts, null, 2)); return; }
+      store.ingest(namespace, posts, p => p.created && p.created < Date.now() / 1000 - maxAge * 86400);
+      if (store.pending(namespace).length) {
+        const key = apiKey();
+        failures = await qualifyPending(store, namespace, batch => scoreBatch(batch, key, rubric), { facebook: true });
+      }
     }
-  }
-  fs.writeFileSync(SEEN_PATH, JSON.stringify([...seen]));
-
-  const day = new Date().toISOString().slice(0, 10);
+    const day = option('--day', new Date().toISOString().slice(0, 10));
+    const scored = store.results(namespace, day);
   const buyers = scored.filter((s) => s.buyer && s.score >= MIN_SCORE).sort((a, b) => b.score - a.score);
   const jobs = scored.filter((s) => s.job).sort((a, b) => b.created - a.created);
   const when = (t) => (t ? new Date(t * 1000).toISOString().slice(0, 10) : '?');
-  const lines = [`# Facebook lead queue, ${day}: ${buyers.length} qualified (of ${fresh.length} new)\n`];
+  const lines = [`# Facebook lead queue, ${day}: ${buyers.length} qualified (of ${scored.length} scored)\n`];
   for (const [n, b] of buyers.entries()) {
     lines.push(`## ${n + 1}. ${b.author} · ${b.score}/100 · ${b.offer} · ${b.group_name || b.group || 'feed'} · ${when(b.created)}`);
     lines.push(`${b.url}`);
@@ -264,8 +251,8 @@ async function main() {
   }
   if (jobs.length) lines.push(`\n# Remote-plausible automation/engineering roles (${jobs.length})\n`);
   for (const j of jobs) lines.push(`- ${when(j.created)} · ${j.author} · ${j.text.slice(0, 140).replace(/\n/g, ' ')}\n  ${j.url}`);
-  fs.writeFileSync(path.join(HERE, `queue_fb${TAG}_${day}.md`), lines.join('\n') + '\n');
-  fs.writeFileSync(path.join(HERE, `queue_fb${TAG}_${day}.json`), JSON.stringify({ buyers, jobs }, null, 2));
+  atomicWrite(exportPath('fb-radar', `queue_fb${TAG}_${day}.md`), lines.join('\n') + '\n');
+  atomicWrite(exportPath('fb-radar', `queue_fb${TAG}_${day}.json`), JSON.stringify({ buyers, jobs }, null, 2));
 
   // Which groups do buyers actually post in? Worth joining (by hand) for member-only posts.
   const groups = {};
@@ -275,9 +262,11 @@ async function main() {
     if (s.buyer) groups[s.group].buyers++;
   }
   const ranked = Object.entries(groups).filter(([, g]) => g.buyers).sort((a, b) => b[1].buyers - a[1].buyers);
-  fs.writeFileSync(path.join(HERE, `groups_fb${TAG}_${day}.md`),
+  atomicWrite(exportPath('fb-radar', `groups_fb${TAG}_${day}.md`),
     [`# Groups where buyers posted, ${day}\n`, ...ranked.map(([g, c]) => `- https://www.facebook.com/groups/${g} · ${c.buyers} buyer post(s) of ${c.posts}`)].join('\n') + '\n');
-  console.log(`${buyers.length} qualified -> queue_fb${TAG}_${day}.md · ${ranked.length} buyer groups -> groups_fb${TAG}_${day}.md`);
+  console.log(`${buyers.length} qualified -> ${exportPath('fb-radar', `queue_fb${TAG}_${day}.md`)}`);
+  if (failures) throw new Error(`${failures} records need retry; run with --resume`);
+  } finally { store.close(); }
 }
 
 main().catch((e) => { console.error(e.message); process.exit(1); });

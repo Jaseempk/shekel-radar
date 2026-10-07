@@ -18,28 +18,22 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { apiKey, settings, statePath, exportPath, atomicWrite, option, integerOption } from '../lib/runtime.mjs';
+import { OpportunityStore, qualifyPending } from '../lib/opportunities.mjs';
+import { modelJSON } from '../lib/qualification.mjs';
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const CDP_URL = 'http://127.0.0.1:9222';
-const __sIdx = process.argv.indexOf('--searches');
-const __pack = __sIdx > -1 ? path.basename(process.argv[__sIdx + 1], '.json').replace('searches-', '') : '';
+const SEARCH_FILE = option('--searches', 'searches.json');
+const __pack = path.basename(SEARCH_FILE, '.json').replace(/^searches-?/, '');
 const SEEN_PATH = path.join(HERE, __pack ? `seen_${__pack}.json` : 'seen.json');
-const ENV_PATH = path.join(HERE, '..', 'reddit-mining', '.env');
-const MODEL = 'claude-haiku-4-5';
-const MIN_SCORE = 55;
-const __ageIdx = process.argv.indexOf('--max-age-days');
-const MAX_AGE_DAYS = __ageIdx > -1 ? parseInt(process.argv[__ageIdx + 1], 10) : 45;
-const __mrIdx = process.argv.indexOf('--max-replies');
-const MAX_REPLIES = __mrIdx > -1 ? parseInt(process.argv[__mrIdx + 1], 10) : Infinity;
+const MODEL = process.env.INCOME_SOCIAL_MODEL || settings.socialModel;
+const MIN_SCORE = settings.minimumBuyerScore;
+const MAX_AGE_DAYS = integerOption('--max-age-days', 45, 1);
+const MAX_REPLIES = integerOption('--max-replies', Number.MAX_SAFE_INTEGER);
 const SCROLLS_PER_SEARCH = 2;          // stay light: first page + two scrolls
 const PAUSE_BETWEEN_SEARCHES = () => 8000 + Math.random() * 12000;
 
-function apiKey() {
-  const env = fs.readFileSync(ENV_PATH, 'utf8');
-  const m = env.match(/ANTHROPIC_API_KEY\s*=\s*(\S+)/);
-  if (!m) throw new Error('ANTHROPIC_API_KEY not found in ' + ENV_PATH);
-  return m[1];
-}
 
 const cut = (s, n) => Array.from(s ?? '').slice(0, n).join('').toWellFormed();
 
@@ -117,7 +111,7 @@ async function openTab() {
 async function runSearches() {
   // --searches <file>: alternate search pack (e.g. searches-jobs.json). Default: searches.json
   const sIdx = process.argv.indexOf('--searches');
-  const searchFile = sIdx > -1 ? process.argv[sIdx + 1] : 'searches.json';
+  const searchFile = SEARCH_FILE;
   const pack = JSON.parse(fs.readFileSync(path.join(HERE, searchFile), 'utf8'));
   const baseQueries = pack.queries;
   globalThis.__rubric = pack.rubric || null;
@@ -187,63 +181,38 @@ HIGHEST-value buyers: operators explicitly looking to hire or pay someone (freel
 
   const prompt = `${rubricHead}
 
-Return ONLY a JSON array, one object per tweet: {"i": <index>, "score": 0-100, "buyer": true/false, "offer": "A"|"B"|"ops", "reason": "<one line>", "angle": "<one line: what a genuinely helpful reply would address>"}.
+Return ONLY a JSON array, one object per tweet: {"i": <index>, "score": 0-100, "buyer": true/false, "offer": ${__pack === 'jobs' ? '"fde"|"founding"|"ai-eng"|"fullstack"|"automation"|"referral-ask"' : '"A"|"B"|"ops"'}, "reason": "<one line>", "angle": "<one line: what a genuinely helpful reply would address>"}.
 
 Tweets:\n${listing}`;
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: 4000, messages: [{ role: 'user', content: prompt }] }),
-  });
-  if (!resp.ok) throw new Error('Anthropic API ' + resp.status + ': ' + (await resp.text()).slice(0, 200));
-  const data = await resp.json();
-  const text = data.content?.[0]?.text ?? '[]';
-  const jsonStr = text.slice(text.indexOf('['), text.lastIndexOf(']') + 1);
-  return JSON.parse(jsonStr);
+  return modelJSON(prompt, { key, model: MODEL });
 }
 
 async function main() {
-  const key = apiKey();
-  const seen = fs.existsSync(SEEN_PATH) ? new Set(JSON.parse(fs.readFileSync(SEEN_PATH, 'utf8'))) : new Set();
-
-  const tweets = await runSearches();
-  const tooOld = (t) => Date.now() - Date.parse(t.created_at) > MAX_AGE_DAYS * 86400000;
-  let fresh = tweets.filter((t) => !seen.has(t.id));
-  const stale = fresh.filter(tooOld);
-  stale.forEach((t) => seen.add(t.id));
-  fresh = fresh.filter((t) => !tooOld(t));
-  if (stale.length) console.log(`${stale.length} older than ${MAX_AGE_DAYS} days skipped.`);
-  const beforeReplies = fresh.length;
-  if (MAX_REPLIES !== Infinity) fresh = fresh.filter((t) => (t.replies ?? 0) <= MAX_REPLIES);
-  console.log(`\n${tweets.length} captured, ${beforeReplies} new since last run.`);
-  if (MAX_REPLIES !== Infinity)
-    console.log(`${beforeReplies - fresh.length} dropped as contested (>${MAX_REPLIES} replies), ${fresh.length} left.`);
-  if (!fresh.length) return;
-
-  const scored = [];
-  for (let i = 0; i < fresh.length; i += 20) {
-    const batch = fresh.slice(i, i + 20);
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const verdicts = await scoreBatch(batch, key);
-        for (const v of verdicts) if (batch[v.i]) scored.push({ ...batch[v.i], ...v });
-        batch.forEach((t) => seen.add(t.id));
-        break;
-      } catch (e) {
-        console.error(`scoring batch failed (attempt ${attempt}/2):`, e.message);
+  if (process.argv.includes('--help')) {
+    console.log('X radar: --searches FILE --max-age-days N --max-replies N --input JSON --resume --export-only --day YYYY-MM-DD'); return;
+  }
+  const namespace = `x:${__pack || 'buyers'}`;
+  const store = new OpportunityStore(statePath('opportunities.sqlite'));
+  try {
+    store.importLegacy(namespace, SEEN_PATH);
+    const pack = JSON.parse(fs.readFileSync(path.resolve(HERE, SEARCH_FILE), 'utf8'));
+    globalThis.__rubric = pack.rubric || null;
+    let failures = 0;
+    if (!process.argv.includes('--export-only')) {
+      const tweets = process.argv.includes('--resume') ? [] : option('--input')
+        ? JSON.parse(fs.readFileSync(path.resolve(option('--input')), 'utf8')) : await runSearches();
+      store.ingest(namespace, tweets, t => Date.now() - Date.parse(t.created_at) > MAX_AGE_DAYS * 86400000 || (t.replies ?? 0) > MAX_REPLIES);
+      if (store.pending(namespace).length) {
+        const key = apiKey();
+        failures = await qualifyPending(store, namespace, batch => scoreBatch(batch, key), { jobs: __pack === 'jobs' });
       }
     }
-  }
-
-  fs.writeFileSync(SEEN_PATH, JSON.stringify([...seen]));
-
+    const day = option('--day', new Date().toISOString().slice(0, 10));
+    const scored = store.results(namespace, day);
   const buyers = scored.filter((s) => s.buyer && s.score >= MIN_SCORE)
     .sort((a, b) => b.score - a.score);
-  const day = new Date().toISOString().slice(0, 10);
-  const sIdx2 = process.argv.indexOf('--searches');
-  const packTag = sIdx2 > -1 ? '_' + path.basename(process.argv[sIdx2 + 1], '.json').replace('searches-', '') : '';
-  const out = path.join(HERE, `queue${packTag}_${day}.md`);
-  const lines = [`# X lead queue — ${day} — ${buyers.length} qualified (of ${fresh.length} new)\n`,
+  const out = exportPath('x-radar', `queue${__pack ? '_' + __pack : ''}_${day}.md`);
+  const lines = [`# X lead queue — ${day} — ${buyers.length} qualified (of ${scored.length} scored)\n`,
     `Reply manually, from your account, genuinely helpful first (see outreach-scripts.md §4). 1-3 replies/day max.\n`];
   for (const [n, b] of buyers.entries()) {
     lines.push(`## ${n + 1}. @${b.screen_name} · ${b.score}/100 · ${b.offer} · ${b.replies ?? '?'} replies`);
@@ -253,9 +222,11 @@ async function main() {
     lines.push(`*Why:* ${b.reason}`);
     lines.push(`*Angle:* ${b.angle}\n`);
   }
-  fs.appendFileSync(out, lines.join('\n') + '\n');
-  fs.writeFileSync(out.replace(/\.md$/, '.json'), JSON.stringify(buyers, null, 2));
-  console.log(`${buyers.length} qualified buyers -> ${out}`);
+  atomicWrite(out, lines.join('\n') + '\n');
+  atomicWrite(out.replace(/\.md$/, '.json'), JSON.stringify(buyers, null, 2));
+  console.log(`${buyers.length} qualified opportunities -> ${out}`);
+  if (failures) throw new Error(`${failures} records need retry; run with --resume`);
+  } finally { store.close(); }
 }
 
 main().catch((e) => { console.error(e.message); process.exit(1); });
