@@ -65,7 +65,7 @@ def scrape_site(domain):
                 found.add(m)
             break  # first host variant that answered is enough for this path
         time.sleep(0.3)
-    on_domain = {e for e in found if e.split("@")[1].lstrip("www.") in (domain, "www." + domain)}
+    on_domain = {e for e in found if e.split("@")[1].removeprefix("www.") in (domain, "www." + domain)}
     return on_domain, found - on_domain
 
 
@@ -155,12 +155,12 @@ class DomainVerifier:
                 pass
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--prospects", default=os.path.join(HERE, "prospects.json"))
     ap.add_argument("--out", default=os.path.join(HERE, "found_emails.csv"))
     ap.add_argument("--only", help="comma-separated domains to limit to")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     prospects = json.load(open(args.prospects))["prospects"]
     if args.only:
