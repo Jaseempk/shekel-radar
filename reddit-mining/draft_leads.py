@@ -10,12 +10,12 @@ For each of the top-N leads (from leads.json), this:
 
 Outputs (buyers only, best first):
   leads_drafted.csv   – spreadsheet
-  leads_drafts.md     – human-readable, copy-paste queue (your daily driver)
-  leads_drafted.jsonl – every processed lead (also the resume checkpoint)
+  leads_drafted.md    – human-readable, copy-paste queue
+  state/opportunities.sqlite – durable outcomes and retryable failures
 
 Run:
   python3 draft_leads.py --leads leads.json --limit 150
-Resumable: re-run the same command; already-processed posts are skipped.
+Resumable: use --resume to retry saved pending work; completed posts are skipped.
 
 Needs ANTHROPIC_API_KEY (env or .env). Arctic Shift needs no key.
 """
@@ -37,7 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.runtime import ROOT, DATA_ROOT, SETTINGS, anthropic_client, atomic_write, write_json
 from lib.opportunities import QualificationStore, validate_reddit
 
-MODEL = SETTINGS["draftModel"]  # swap to "claude-haiku-4-5" to cut cost on large batches
+MODEL = SETTINGS["draftModel"]
 ARCTIC = "https://arctic-shift.photon-reddit.com/api"
 MIN_BUYER_SCORE = 55  # include in the final queue only at/above this
 

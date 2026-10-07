@@ -10,11 +10,12 @@
  * Run:  node find-slugs.mjs names.txt            # one company name per line
  *       node find-slugs.mjs names.txt --merge    # append hits into companies.json
  *
- * Output: found-slugs.json (and optionally merged into companies.json)
+ * Output: exports/ats-radar/found-slugs_RUN.json (optionally merged into companies.json)
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { BOARDS, fetchBoard } from '../lib/ats.mjs';
+import { atomicWrite, exportPath, runStamp } from '../lib/runtime.mjs';
 import { fileURLToPath } from 'node:url';
 
 export async function main() {
@@ -61,8 +62,9 @@ export async function main() {
     await new Promise((r) => setTimeout(r, 250)); // ~1 company/sec, well under any limit
   }
 
-  fs.writeFileSync(path.join(HERE, 'found-slugs.json'), JSON.stringify(found, null, 2));
-  console.log(`\n${found.length}/${names.length} boards found -> found-slugs.json`);
+  const out = exportPath('ats-radar', `found-slugs_${runStamp()}.json`);
+  atomicWrite(out, JSON.stringify(found, null, 2));
+  console.log(`\n${found.length}/${names.length} boards found -> ${out}`);
 
   if (argv.includes('--merge')) {
     const p = path.join(HERE, 'companies.json');
@@ -71,7 +73,7 @@ export async function main() {
     const added = found.filter((f) => !have.has(`${f.ats}:${f.slug}`))
                        .map(({ name, ats, slug }) => ({ name, ats, slug }));
     doc.companies.push(...added);
-    fs.writeFileSync(p, JSON.stringify(doc, null, 2));
+    atomicWrite(p, JSON.stringify(doc, null, 2));
     console.log(`merged ${added.length} new companies into companies.json (now ${doc.companies.length})`);
   }
 }

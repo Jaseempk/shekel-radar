@@ -8,7 +8,7 @@
  * Prereqs: browser running with --remote-debugging-port=9222 and logged in to facebook.com.
  * Run:   node radar.mjs            (1x per day is plenty)
  *        node radar.mjs --max-age-days 30
- * Output: queue_fb_YYYY-MM-DD.md/.json, groups_fb_YYYY-MM-DD.md, seen.json
+ * Output: exports/fb-radar queues; durable state in state/opportunities.sqlite
  */
 import fs from 'node:fs';
 import path from 'node:path';

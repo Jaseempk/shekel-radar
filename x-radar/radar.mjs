@@ -1,7 +1,7 @@
 /**
  * X lead radar — runs the saved live searches in YOUR logged-in browser session,
  * captures the SearchTimeline GraphQL responses the page itself loads, dedupes
- * against everything already seen, LLM-scores buyer intent, and appends a daily
+ * against everything already seen, LLM-scores buyer intent, and rebuilds a daily
  * queue markdown you review by hand.
  *
  * READ-ONLY by design: it never posts, likes, follows, or DMs. Posting stays manual.
@@ -11,10 +11,10 @@
  *        open -a "Brave Browser" --args --remote-debugging-port=9222
  *      (Chrome works too: open -a "Google Chrome" --args --remote-debugging-port=9222)
  *   2. Be logged in to x.com in that browser.
- *   3. ANTHROPIC_API_KEY in ../reddit-mining/.env (already there).
+ *   3. ANTHROPIC_API_KEY in the environment or project .env.
  *
  * Run (1-2x per day, no more):  node radar.mjs
- * Output: queue_YYYY-MM-DD.md (best first) + seen.json (dedupe state)
+ * Output: exports/x-radar queues; durable state in state/opportunities.sqlite
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -80,7 +80,7 @@ async function runSearches() {
   // --searches <file>: alternate search pack (e.g. searches-jobs.json). Default: searches.json
   const sIdx = process.argv.indexOf('--searches');
   const searchFile = SEARCH_FILE;
-  const pack = JSON.parse(fs.readFileSync(path.join(HERE, searchFile), 'utf8'));
+  const pack = JSON.parse(fs.readFileSync(path.resolve(HERE, searchFile), 'utf8'));
   const baseQueries = pack.queries;
   globalThis.__rubric = pack.rubric?.replaceAll('{{candidateLocation}}', settings.candidateLocation) || null;
 
