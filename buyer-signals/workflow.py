@@ -2,6 +2,7 @@
 """Reproducible buyer workflow: prepare → verify/import contacts → draft."""
 import argparse
 import csv
+import io
 from datetime import datetime, timezone
 import hashlib
 import importlib.util
@@ -46,7 +47,7 @@ def contacts_stage(run, contacts_file=None):
     if not (run / 'manifest.json').exists():
         raise ValueError('Run prepare before verify')
     if contacts_file:
-        rows = list(csv.DictReader(Path(contacts_file).open()))
+        rows = list(csv.DictReader(io.StringIO(Path(contacts_file).read_text())))
         required = {'company', 'domain', 'email', 'source', 'smtp'}
         if not rows or not required.issubset(rows[0]):
             raise ValueError('Contacts CSV requires company, domain, email, source and smtp columns and at least one row')
@@ -65,7 +66,7 @@ def draft_stage(run, personal=False):
         raise ValueError('Run verify first, or import a contacts CSV with --contacts')
     if manifest.get('contacts_sha256') != hashlib.sha256((run / 'emails.csv').read_bytes()).hexdigest():
         raise ValueError('Contacts changed after verification/import; run verify --contacts again')
-    contacts = list(csv.DictReader((run / 'emails.csv').open()))
+    contacts = list(csv.DictReader(io.StringIO((run / 'emails.csv').read_text())))
     targets = select_contacts(prospects, contacts)
     drafts, failures = [], []
     cache_path = run / 'draft-progress.json'

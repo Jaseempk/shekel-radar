@@ -10,10 +10,11 @@ Usage:
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from lib.runtime import ROOT, DATA_ROOT
+from lib.runtime import ROOT, DATA_ROOT, atomic_write, write_json
 
 import argparse
 import csv
+import io
 import json
 import os
 import re
@@ -57,16 +58,20 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--leads", default=str(DATA_ROOT / "exports/reddit-mining/leads.json"))
     ap.add_argument("--out", default=str(DATA_ROOT / "exports/reddit-mining/leads.csv"))
+    ap.add_argument("--max-comments", type=int, default=5)
     ap.add_argument("--keep-contested", action="store_true", help="flag instead of drop")
     args = ap.parse_args()
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
 
-    leads = json.load(open(args.leads))
+    leads = json.loads(Path(args.leads).read_text())
     kept = []
     failures = []
     for i, ld in enumerate(leads, 1):
         pid = post_id_from_url(ld.get("url", ""))
         seller = False
+        if not pid:
+            failures.append({**ld, 'seller_check': 'unknown', 'error': 'No valid Reddit post ID'})
+            continue
         if pid:
             try:
                 comments = fetch_comments(pid)
@@ -77,24 +82,27 @@ def main():
             ld["num_comments"] = len(comments)
             seller = any(any(s in (c.get("body") or "").lower() for s in SELLER) for c in comments)
             time.sleep(0.5)  # ~2 req/s
-        ld["contested"] = "yes" if seller else ld.get("contested", "no")
+        contested = seller or ld.get("num_comments", 0) > args.max_comments
+        ld["contested"] = "yes" if contested else "no"
+        ld["seller_check"] = "complete"
         print(f"  {i}/{len(leads)}  {ld.get('subreddit',''):<18} "
               f"{'SELLER — drop' if seller else 'clean'}  ({ld.get('num_comments',0)} cmts)")
-        if seller and not args.keep_contested:
+        if contested and not args.keep_contested:
             continue
         kept.append(ld)
 
     kept.sort(key=lambda x: x.get("score", 0), reverse=True)
     fields = ["score", "subreddit", "offer", "num_comments", "contested",
               "age_days", "author", "title", "url", "matched", "angle"]
-    with open(args.out, "w", newline="", encoding="utf-8") as f:
+    with io.StringIO(newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
         w.writerows(kept)
-    json.dump(kept, open(os.path.splitext(args.out)[0] + ".json", "w"), indent=2)
+        atomic_write(args.out, f.getvalue())
+    write_json(Path(args.out).with_suffix(".json"), kept)
     print(f"\n{len(kept)}/{len(leads)} leads survived the seller check -> {args.out}")
+    write_json(Path(args.out).with_suffix('.retry.json'), failures)
     if failures:
-        json.dump(failures, open(os.path.splitext(args.out)[0] + '.retry.json', 'w'), indent=2)
         print(f"{len(failures)} unchecked leads saved for retry (not labelled clean)")
     return 1 if failures else 0
 

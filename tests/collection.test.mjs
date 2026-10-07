@@ -56,3 +56,16 @@ test('browser protocol errors and timeouts reject; listeners unsubscribe and clo
   ws.onmessage({ data: JSON.stringify({ method: 'Network.event' }) }); await client.drain(); assert.equal(calls,0);
   const pending = client.send('Page.enable'); client.dispose(); await assert.rejects(pending, /closed/);
 });
+
+test('legacy title-based notifications migrate once and do not suppress later postings', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'income-legacy-jobs-'));
+  const store = new JobStore(path.join(dir, 'state.sqlite'));
+  t.after(() => { store.close(); fs.rmSync(dir, { recursive: true, force: true }); });
+  const legacy = new Set(['Example::Engineer::Remote']);
+  const first = { id: 'ashby:example:1', company: 'Example', title: 'Engineer', location: 'Remote' };
+  store.importLegacy([first], legacy);
+  assert.equal(store.unseen([first]).length, 0);
+  const reopened = { ...first, id: 'ashby:example:2' };
+  store.importLegacy([reopened], legacy);
+  assert.equal(store.unseen([reopened]).length, 1);
+});

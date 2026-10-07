@@ -19,7 +19,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { apiKey, settings, statePath, exportPath, atomicWrite, option, integerOption } from '../lib/runtime.mjs';
+import { apiKey, settings, statePath, exportPath, atomicWrite, option, integerOption, dateOption } from '../lib/runtime.mjs';
 import { OpportunityStore, qualifyPending } from '../lib/opportunities.mjs';
 import { modelJSON } from '../lib/qualification.mjs';
 
@@ -177,7 +177,7 @@ export async function main() {
         failures = await qualifyPending(store, namespace, batch => scoreBatch(batch, key), { jobs: __pack === 'jobs' });
       }
     }
-    const day = option('--day', new Date().toISOString().slice(0, 10));
+    const day = dateOption();
     const scored = store.results(namespace, day);
   const buyers = scored.filter((s) => s.buyer && s.score >= MIN_SCORE)
     .sort((a, b) => b.score - a.score);

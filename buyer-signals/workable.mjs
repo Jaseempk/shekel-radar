@@ -75,7 +75,7 @@ export async function main() {
   // one row per company, keep its strongest signal
   const byCo = new Map();
   for (const r of rows) {
-    const k = (r.company || '').toLowerCase();
+    const k = `${(r.company || '').toLowerCase()}::${r.website}`;
     const prev = byCo.get(k);
     if (!prev) byCo.set(k, { ...r, roles: [r] });
     else { if (!prev.roles.some(role => role.url === r.url)) prev.roles.push(r); if (r.score > prev.score) Object.assign(prev, r, { roles: prev.roles }); }

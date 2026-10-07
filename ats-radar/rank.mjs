@@ -30,7 +30,7 @@ export async function main() {
   const newest = (dir, re) => {
     const file = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => re.test(f)).sort().pop() : null;
     if (!file) { console.error(`No snapshots in ${dir}`); return null; }
-    if (Date.now() - fs.statSync(path.join(dir, file)).mtimeMs > MAX_SOURCE_AGE * 86400000) {
+    if (Date.now() - Date.parse(file.match(/\d{4}-\d{2}-\d{2}/)?.[0] || '1970-01-01') > MAX_SOURCE_AGE * 86400000) {
       console.error(`Ignoring stale snapshot: ${file}`); return null;
     }
     return file;

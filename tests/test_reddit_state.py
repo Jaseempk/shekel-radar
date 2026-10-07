@@ -2,6 +2,7 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import sys
 import unittest
 from unittest.mock import patch
 from lib.opportunities import QualificationStore
@@ -39,6 +40,18 @@ class RedditStateTests(unittest.TestCase):
             with self.assertRaises(ValueError): store.complete('reddit:buyers',row)
             self.assertEqual(len(store.pending('reddit:buyers')),1)
             store.close()
+
+    def test_unavailable_seller_check_is_saved_for_retry_not_clean(self):
+        sys.path.insert(0, str(ROOT/'reddit-mining'))
+        module=load('check_sellers_test',ROOT/'reddit-mining/check_sellers.py')
+        with tempfile.TemporaryDirectory() as temp:
+            base=Path(temp); source=base/'input.json'; out=base/'clean.csv'
+            source.write_text(json.dumps([{'url':'https://reddit.com/r/test/comments/abc','score':5,'num_comments':0}]))
+            with patch.object(module,'fetch_comments',side_effect=RuntimeError('unavailable')), patch.object(sys,'argv',['check','--leads',str(source),'--out',str(out)]):
+                self.assertEqual(module.main(),1)
+            self.assertEqual(json.loads(out.with_suffix('.json').read_text()),[])
+            retry=json.loads(out.with_suffix('.retry.json').read_text())
+            self.assertEqual(retry[0]['seller_check'],'unknown')
 
     def test_export_is_beside_requested_output_and_needs_no_model(self):
         module=load('draft_leads_test',ROOT/'reddit-mining/draft_leads.py')

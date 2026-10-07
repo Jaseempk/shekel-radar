@@ -48,6 +48,7 @@ def write_json(path, value):
 def load_credentials():
     if os.environ.get('ANTHROPIC_API_KEY'):
         return
+    os.environ.pop('ANTHROPIC_API_KEY', None)
     load_env_file(ROOT / 'reddit-mining/.env')
 
 

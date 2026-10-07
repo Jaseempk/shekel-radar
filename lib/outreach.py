@@ -59,9 +59,12 @@ def prepare_prospects(signals, domains):
         key = (company.casefold(), domain)
         row = grouped.setdefault(key, {'company': company, 'domain': domain, 'domain_source': evidence, 'founder': None, 'roles': []})
         for role in signal.get('roles') or [signal]:
+            if not override and role.get('website') and domain_name(role['website']) != domain:
+                unresolved.append({'company': company, 'url': role.get('url'), 'reason': 'Role website conflicts with company website'})
+                continue
             if not any(r['url'] == role.get('url') for r in row['roles']):
                 row['roles'].append({**role, 'offer': offer_for(role)})
-    return list(grouped.values()), unresolved
+    return [p for p in grouped.values() if p["roles"]], unresolved
 
 
 def select_contacts(prospects, contacts):

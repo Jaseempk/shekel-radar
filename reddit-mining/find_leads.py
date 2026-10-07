@@ -11,10 +11,11 @@ Stdlib only — no pip install. Run:
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from lib.runtime import ROOT, DATA_ROOT
+from lib.runtime import ROOT, DATA_ROOT, atomic_write, write_json
 
 import argparse
 import csv
+import io
 from collections import Counter
 import glob
 import json
@@ -281,12 +282,13 @@ def main():
 
     fields = ["score", "subreddit", "offer", "num_comments", "contested",
               "age_days", "author", "title", "url", "matched", "angle"]
-    with open(args.out, "w", newline="", encoding="utf-8") as f:
+    with io.StringIO(newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
         w.writerows(leads)
+        atomic_write(args.out, f.getvalue())
     json_out = os.path.splitext(args.out)[0] + ".json"
-    json.dump(leads, open(json_out, "w", encoding="utf-8"), indent=2)
+    write_json(json_out, leads)
 
     print(f"Scanned {scanned} posts across {len(post_files)} subreddits.")
     print(f"Dropped {deduped} reposted/duplicate-title posts (spam).")

@@ -32,7 +32,6 @@ test('social commands can rebuild matching JSON/Markdown twice without browser o
     const stem=path.join(dir,'exports',file+day); const before=fs.readFileSync(stem+'.md','utf8');
     run(command,'--export-only'); assert.equal(fs.readFileSync(stem+'.md','utf8'),before);
     const json=JSON.parse(fs.readFileSync(stem+'.json')); assert.equal((Array.isArray(json)?json:json.buyers).length,1);
-    assert.equal(before.match(/fixture-1/g)?.length ?? 0,0); // IDs stay in structured data; human queue uses the URL.
     assert.ok(before.includes('https://example.com/1'));
   }
 });

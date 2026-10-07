@@ -15,6 +15,12 @@ Output: found_emails.csv, one row per candidate, best evidence first.
 Run:  python3 find_emails.py            (all prospects)
       python3 find_emails.py --only salesbread.com
 """
+from pathlib import Path
+import io
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.runtime import DATA_ROOT, atomic_write
+
 import argparse
 import csv
 import json
@@ -158,11 +164,11 @@ class DomainVerifier:
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--prospects", default=os.path.join(HERE, "prospects.json"))
-    ap.add_argument("--out", default=os.path.join(HERE, "found_emails.csv"))
+    ap.add_argument("--out", default=str(DATA_ROOT / "exports/email-finder/found_emails.csv"))
     ap.add_argument("--only", help="comma-separated domains to limit to")
     args = ap.parse_args(argv)
 
-    prospects = json.load(open(args.prospects))["prospects"]
+    prospects = json.loads(Path(args.prospects).read_text())["prospects"]
     if args.only:
         keep = {d.strip() for d in args.only.split(",")}
         prospects = [p for p in prospects if p["domain"] in keep]
@@ -205,10 +211,11 @@ def main(argv=None):
 
     order = {"valid": 0, "catchall": 1, "unknown": 2, "": 3, "invalid": 4}
     rows.sort(key=lambda r: (r["company"], order.get(r["smtp"], 5)))
-    with open(args.out, "w", newline="", encoding="utf-8") as f:
+    with io.StringIO(newline="") as f:
         w = csv.DictWriter(f, fieldnames=["company", "domain", "email", "source", "smtp", "founder"])
         w.writeheader()
         w.writerows(rows)
+        atomic_write(args.out, f.getvalue())
     n_valid = sum(1 for r in rows if r["smtp"] == "valid")
     n_catch = len({r["domain"] for r in rows if r["smtp"] == "catchall"})
     print(f"\n{len(rows)} candidates -> {args.out}")
