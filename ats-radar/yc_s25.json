@@ -1,0 +1,635 @@
+{
+  "companies": [
+    {
+      "id": 30832,
+      "name": "F2",
+      "slug": "f2",
+      "website": "http://f2.ai",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/976c3cad3814111f1af6d087f0a0fe249be74b42.png",
+      "oneLiner": "The AI platform for private markets investors",
+      "longDescription": "F2 is the AI platform for private markets investors. Purpose-built for private credit, private equity, and commercial banking, F2 accelerates diligence, underwriting, and portfolio monitoring, helping teams evaluate deals over 60% faster. \r\n\r\nF2 turns unstructured deal data into investment-grade analysis and polished memos in minutes. Unlike general-purpose AI, F2 is built with the domain expertise and depth to handle the most complex financial analysis. Already trusted across thousands of deals, F2 makes collaboration easy and retains historical context, so past work compounds into future wins. \r\n\r\nHeadquartered in New York City, F2 is backed by leading investors including NFX, Left Lane Capital, and Y Combinator. ",
+      "teamSize": 15,
+      "url": "https://www.ycombinator.com/companies/f2",
+      "batch": "S25",
+      "tags": [
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Engineering, Product and Design"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada",
+        "Remote",
+        "Partly Remote"
+      ],
+      "locations": [
+        "New York City"
+      ],
+      "badges": [
+        "isHiring"
+      ]
+    },
+    {
+      "id": 30813,
+      "name": "Blue",
+      "slug": "blue",
+      "website": "https://heyblue.com/",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/90acd1189896151e269eca2dc0a6b15c7042d091.png",
+      "oneLiner": "Your phone finally has someone to run it. Plug in Blue, just ask.",
+      "longDescription": "Everyone pays someone to handle the parts of their life that don't need them personally. The cleaner, the bookkeeper, the lawn service. Nobody could handle what lives in your phone. Until Blue.\r\n\r\nBlue is a small USB-C dongle and iPhone app. Plug it in and say what needs doing. The follow-up you haven't sent, the appointment you haven't booked, the reply you owe. Blue opens the right app, does the work, and tells you when it's done. You don't touch your phone.\r\n\r\nWorks with every app already on your iPhone. \r\n\r\nThe team brings complementary experience at scale: Omar Abdelaziz led Google Assistant’s transition to LLMs and holds one of earliest patents in LLM-based computer control; Peter Krogh spent decades designing voice-first dialog systems and was most recently a design lead at Google DeepMind building actions for Gemini Live; Muhammad Farhan Hossain helped ship Apple Vision Pro, is named on dozens of hardware/systems patents, and has led products from prototype to mass production.\r\n\r\nWe’ve built systems used by billions. Now we’re on to defining the next era of computing.",
+      "teamSize": 6,
+      "url": "https://www.ycombinator.com/companies/blue",
+      "batch": "S25",
+      "tags": [
+        "Hardware",
+        "Productivity",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "Consumer"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada",
+        "Remote",
+        "Partly Remote"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30801,
+      "name": "burnt",
+      "slug": "burnt",
+      "website": "https://getburnt.ai/",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/2af9e43cd6c77970b3bff5071024e812ac9ee3e0.png",
+      "oneLiner": "Agentic Operating System for Food Supply Chain",
+      "longDescription": "Food Supply Chain companies have been using legacy ERPs for decades. Everyone knows these are necessary evils that essentially run the business but take up a lot of operational capacity. They are not about to just rip and replace their existing system that runs their whole business with a system that takes years to implement. Imagine if they could implement AI that runs the ERP for them, in weeks?\r\n\r\nBurnt’s building an agentic OS for the Food Supply Chain with AI Agents for each department. \r\n\r\nOur AI Agent, Ozai, has started by replacing the whole order management job function at food distribution companies, so that sales and customer service teams can focus on what matters - the customer. Ozai monitors all incoming messages (emails, phone calls, voicemails, whatsapp, fax etc.), figures out if it's an order, learns each customer's habits, shorthand, and favorite products, picks up on any prep notes, and enters it straight into the existing ERP. It'll even go back to the customers on your behalf when it's not sure about something, clarify things and carry on working. \r\n\r\nThe more it sees, the smarter it gets. \r\n",
+      "teamSize": 3,
+      "url": "https://www.ycombinator.com/companies/burnt",
+      "batch": "S25",
+      "tags": [
+        "Supply Chain",
+        "Food Tech",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Supply Chain and Logistics"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": [
+        "highlightWomen",
+        "isHiring"
+      ]
+    },
+    {
+      "id": 30797,
+      "name": "Veritus",
+      "slug": "veritus",
+      "website": "https://www.veritus.com",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/a784e9084818b8c7af26cd462448e7fd4415c18b.png",
+      "oneLiner": "AI agents for the consumer lending industry",
+      "longDescription": "Veritus is a omni-channel platform for deploying AI agents for loan servicing and collections, including inbound and outbound voice agents. Our agents negotiate repayment plans, follow up across channels, and drive recoveries with zero human involvement.\r\n\r\nBy combining cutting edge voice AI with deep regulatory compliance and vertical specialization we're able to drastically reduce the cost-to-collect while increasing recovery rates. ",
+      "teamSize": 10,
+      "url": "https://www.ycombinator.com/companies/veritus",
+      "batch": "S25",
+      "tags": [
+        "Fintech",
+        "Lending",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "Fintech",
+        "Credit and Lending"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada",
+        "Remote",
+        "Partly Remote"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": [
+        "isHiring"
+      ]
+    },
+    {
+      "id": 30796,
+      "name": "Sapien",
+      "slug": "outrove",
+      "website": "https://www.asksapien.ai/",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/62e9c70a8a12f0b75b6d48d832ab38d6df702d0e.png",
+      "oneLiner": "Synthetic populations for decisions",
+      "longDescription": "Surveys ask people what they think they’ll do. Focus groups ask a handful of people to explain behavior they often don’t understand themselves.\r\n\r\nSapien simulates entire populations instead. We create AI agents that model how real audiences behave, letting companies, governments, and investors test decisions in minutes: what product to launch, what price to set, what campaign to run, what policy will work, or how a market will move.\r\n\r\nThe output is not another dashboard. It’s a prediction of what will happen, which segments will drive it, and what decision is most likely to win.",
+      "teamSize": 2,
+      "url": "https://www.ycombinator.com/companies/outrove",
+      "batch": "S25",
+      "tags": [
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30792,
+      "name": "Bizzy AI",
+      "slug": "geo-ai",
+      "website": "https://www.usebizzy.com/",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/f1bb9d080fb903ceaca051fee53ae9b28b4bb593.png",
+      "oneLiner": "Bizzy works 24/7 so you never miss a lead.",
+      "longDescription": "Bizzy handles your calls, captures and qualifies leads, and books appointments directly into your CRM. It understands your services better than a receptionist would, routes and escalates calls, and syncs with your existing tools to incorporate complex workflows, all so your team can focus on servicing leads, not qualifying them.",
+      "teamSize": null,
+      "url": "https://www.ycombinator.com/companies/geo-ai",
+      "batch": "S25",
+      "tags": [
+        "Workflow Automation",
+        "Sales",
+        "Marketing",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Marketing"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "New York City"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30789,
+      "name": "Interfere",
+      "slug": "interfere",
+      "website": "https://interfere.com",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/c788f853f55de9b0ed57c42d5dd9b8c7388fc49f.png",
+      "oneLiner": "Give engineering, product, and design teams insight into unseen issues",
+      "longDescription": "Interfere empowers engineers, product managers and designers with real-time understanding of previously unseen bugs and issues.",
+      "teamSize": 8,
+      "url": "https://www.ycombinator.com/companies/interfere",
+      "batch": "S25",
+      "tags": [
+        "Developer Tools",
+        "Design",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Engineering, Product and Design"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "New York City"
+      ],
+      "badges": [
+        "isHiring"
+      ]
+    },
+    {
+      "id": 30768,
+      "name": "Okibi",
+      "slug": "okibi",
+      "website": "https://okibi.ai",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/2add42dcef83667e3ac21f0eabb0f202583f5d0c.png",
+      "oneLiner": "Turns products into CLIs and agents into customers",
+      "longDescription": "Okibi generates a CLI from any product's codebase, so AI agents can use it the way people do.\r\n\r\nAgents are becoming software's next customers. When one comes to a product to do a task or purchase and finds no doorway in, it moves on to the competitor whose CLI lets it through. Okibi turns products into CLIs and agents into customers.\r\n\r\nDoorDash, Mercury, Gusto, Ramp, and 30+ other companies have already launched first-party agent CLIs. Okibi is how every product gets one.",
+      "teamSize": 2,
+      "url": "https://www.ycombinator.com/companies/okibi",
+      "batch": "S25",
+      "tags": [
+        "Developer Tools",
+        "SaaS",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30763,
+      "name": "Rebulk",
+      "slug": "rebulk",
+      "website": "https://www.rebulk.com",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/37f1f3fac3b53d55834007e8aa34e2f8bb7a1198.png",
+      "oneLiner": "Accurately measure and monitor bulk inventory",
+      "longDescription": "Rebulk accurately measures and monitors bulk inventory like piles of feed, sand, and other assets that do not fit into boxes and barcodes using cameras, LiDAR, and computer vision.\r\n\r\nMost bulk inventory is still managed with rough estimates, manual checks, delayed updates, and too much guesswork. Because it lives in piles, bays, yards, and truck beds instead of boxes with barcodes, it is much harder to track accurately. When teams do not know what is actually on site, it leads to shrink, stockouts, bad planning, and unnecessary fire drills.\r\n\r\nWe’ve lived this problem, and we know how to solve it. Warren saw it firsthand as a Product Manager at Milk Moovement, a $20M Series A AgTech startup, working closely with feed suppliers and farm managers. Cole was engineer #3 at Tropic, scaling it from seed to Series B, and later led engineering at an AI startup.\r\n\r\nWe’ve built an integrated hardware and software platform and is working with one of the largest agricultural company in North America and Charm Industrial. As industries demand real-time visibility into the physical world, RebuIk is positioned to become the operating system for bulk assets from inventory tracking to procurement and logistics.",
+      "teamSize": 3,
+      "url": "https://www.ycombinator.com/companies/rebulk",
+      "batch": "S25",
+      "tags": [
+        "Computer Vision",
+        "Supply Chain",
+        "Agriculture",
+        "AI",
+        "Industrial"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Supply Chain and Logistics"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "Olathe, KS, USA"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30759,
+      "name": "Certus AI",
+      "slug": "certus-ai",
+      "website": "https://www.certus-ai.com/",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/4913536f9defe2e375acb9a499aa2ac443e9dc95.png",
+      "oneLiner": "Replacing the restaurant phone line with Voice AI",
+      "longDescription": "Certus AI is replacing the restaurant phone line with Voice AI.\r\n\r\nRestaurants lose up to $100,000 per year per location from missed calls, lost orders, and abandoned hold lines. Staff are overwhelmed. IVRs frustrate customers. Call centers are expensive and impersonal.\r\n\r\nIt’s 2025. Guests don’t leave voicemails or wait on hold. They just move on.\r\n\r\nCertus is an AI voice agent built for restaurants. It answers every call, 24/7 — taking orders, processing deliveries, booking reservations, upselling, and handling complaints in English, Spanish, French and more. Certus is built to manage the phone line end to end, from the customer call to the restaurant tech stack, with zero human intervention required. It currently integrates with industry-leading systems like Toast, Square, Clover, UberEats, DoorDash, and more.\r\n\r\nWe’re building the voice layer of the modern restaurant — the employee they’ll never fire.\r\n\r\nWe started Certus because we lived the pain. Gurveer (CEO) grew up answering phones in his family’s restaurant and helped operate them, growing from 1 to 11 locations in 7 years. Later, he and Adam (CRO) ran a restaurant growth startup to help others increase revenue, but kept watching clients bleed cash because no one picked up the phone. So we built the solution the industry always wished existed.\r\n\r\nUntil now, this problem was considered unsolvable. But Voice AI has finally crossed the conversational chasm and 72% of consumers now prefer AI over humans as long as it means faster and better service.\r\n\r\nMore importantly, the market is begging for this. The North American restaurant industry crossed $1 trillion in 2024, and it's projected to hit $1.5 trillion in 2025. Yet over $100 billion is still lost annually to missed calls, human error, and outdated tech. As the market continues to grow, so do the losses!\r\n\r\nOur customers say it best:\r\n\r\n- “Certus changed my life overnight.”\r\n- “We were losing the ability to give great in-house service — the phone was killing us.”\r\n-  “70% of my business comes through the phone. That’s mine and my 16 staffs livelihood.”\r\n- “Before Certus, I used to lose 40 - 60 calls a day…. now my printer just stays printing!”\r\n-  “I’ve been in the business 38 years. I’ve been waiting for this since then.”\r\n\r\nCertus is here to fix the $120B phone problem — one call at a time.\r\n\r\nAnd in doing so, we’re redefining how the restaurant industry communicates forever, starting with the phone line.",
+      "teamSize": 8,
+      "url": "https://www.ycombinator.com/companies/certus-ai",
+      "batch": "S25",
+      "tags": [
+        "Artificial Intelligence",
+        "SaaS",
+        "B2B",
+        "Restaurant Tech",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30756,
+      "name": "Notte",
+      "slug": "notte",
+      "website": "https://www.notte.cc/",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/63003c4a4bcce138151403c1e186fcebf3dfa34a.png",
+      "oneLiner": "Reliable Web Agents for Enterprise",
+      "longDescription": "Nottelabs offers a platform to build and deploy enterprise-grade browser agents. We help companies cut costs and save time by automating repetitive tasks. Unlike others, we provide agents, tools, and infrastructure through a single API, making us the fastest path to reliable web AI agents in production.",
+      "teamSize": 5,
+      "url": "https://www.ycombinator.com/companies/notte",
+      "batch": "S25",
+      "tags": [
+        "Developer Tools",
+        "Automation",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30748,
+      "name": "Pleom",
+      "slug": "pleom",
+      "website": "https://pleom.com",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/3b1e76d8c0743b28030c0f3c37f0d0bfa7f51272.png",
+      "oneLiner": "Agentic Business Intelligence",
+      "longDescription": "Automatic insights on all your company data. Speed up business workflows to visualizations with a 0 learning curve.",
+      "teamSize": 0,
+      "url": "https://www.ycombinator.com/companies/pleom",
+      "batch": "S25",
+      "tags": [
+        "Artificial Intelligence",
+        "Generative AI",
+        "Analytics",
+        "Big Data",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Analytics"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "New York City"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30744,
+      "name": "SigmanticAI",
+      "slug": "sigmanticai",
+      "website": "https://www.sigmanticai.com",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/551c81e2cf1198e6431c7a170e74ee43deff6f61.png",
+      "oneLiner": "The Cursor for Chip Design - Delivering Silicon-Ready Chip Designs…",
+      "longDescription": "SigmanticAI is building an AI-native hardware development assistant that automates the entire RTL design flow, from natural language to synthesizable HDL and testbenches, inside a seamless VSCode fork. Powered by fine-tuned Verilog LLMs, reinforcement learning, and real compiler feedback, SigmanticAI iteratively refines code until it compiles and passes synthesis, no matter how complex the design. It’s like the Cursor for HDL design. \r\n\r\nIn addition to code generation, SigmanticAI can generate token-level annotations and onboarding documents to accelerate ramp-up for new engineers. With support for both cloud and on-prem deployment, it integrates with existing EDA tools to dramatically reduce debug time, improve collaboration, and accelerate hardware design across teams",
+      "teamSize": 2,
+      "url": "https://www.ycombinator.com/companies/sigmanticai",
+      "batch": "S25",
+      "tags": [
+        "Hard Tech",
+        "Hardware",
+        "B2B",
+        "AI",
+        "AI Assistant"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Engineering, Product and Design"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30739,
+      "name": "Quotain",
+      "slug": "quotain",
+      "website": "https://quotain.com",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/37a5e96e86c6ccc42f303588c30f27f31a1fad2d.png",
+      "oneLiner": "AI sales simulations using your real deals",
+      "longDescription": "Quotain helps sales teams practice the calls they actually need to win. Reps upload or connect CRM notes, past calls, LinkedIn profiles, and company websites, then Quotain creates realistic AI buyers they can speak with before the real meeting. After each practice call, Quotain scores the rep and shows exactly what to improve.",
+      "teamSize": 2,
+      "url": "https://www.ycombinator.com/companies/quotain",
+      "batch": "S25",
+      "tags": [
+        "Sales",
+        "Sales Enablement",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Sales"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "New York City"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30732,
+      "name": "Humoniq",
+      "slug": "humoniq",
+      "website": "https://humoniq.ai",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/5b4b4793c04b2144e6d808676c5d789049433c7b.png",
+      "oneLiner": "AI-Native BPO for travel & transport",
+      "longDescription": "Humoniq is building the first AI-Native BPO for the travel & transport industries, which outsource $20B of customer support each year. Our AI-native approach improves speed, accuracy, and satisfaction.\r\n\r\nOur team is uniquely equipped to solve this challenge. We previously grew a travel management company, Flightfox (YC S12), to $22M/yr. We handled thousands of customer requests each month, which exposed the limitations of traditional outsourcing.",
+      "teamSize": 5,
+      "url": "https://www.ycombinator.com/companies/humoniq",
+      "batch": "S25",
+      "tags": [
+        "Travel",
+        "AI",
+        "Conversational AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30719,
+      "name": "ProcIndex",
+      "slug": "procindex",
+      "website": "https://procindex.com/",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/55b886e3f926718d32add5ccfdea06761c40b243.png",
+      "oneLiner": "AI-powered accounting automation for construction and manufacturing",
+      "longDescription": "ProcIndex uses AI to automate accounting operations for the construction and manufacturing sectors.\r\n\r\nIt connects to your existing ERP and operates in the background while giving you full visibility into its actions. By automating accounts payable, accounts receivable, reconciliation, and vendor management, ProcIndex helps accounting teams improve efficiency by 33%.",
+      "teamSize": 4,
+      "url": "https://www.ycombinator.com/companies/procindex",
+      "batch": "S25",
+      "tags": [
+        "Fintech",
+        "Finance",
+        "B2B",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Finance and Accounting"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada",
+        "Remote",
+        "Partly Remote"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": [
+        "highlightWomen",
+        "isHiring"
+      ]
+    },
+    {
+      "id": 30716,
+      "name": "Finto",
+      "slug": "finto-de",
+      "website": "https://www.gofinto.com/",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/f6adb7f41be65aa21db82cf58680bb6b24b1fdaa.png",
+      "oneLiner": "AI accounting for enterprise finance teams",
+      "longDescription": "Finto builds AI accounting software for enterprise finance teams. We automate the invoice-to-pay process from their email inbox to their ERP. Cutting out 80% of the accountants daily work in invoice recording, account coding and  invoice approvals.",
+      "teamSize": 10,
+      "url": "https://www.ycombinator.com/companies/finto-de",
+      "batch": "S25",
+      "tags": [
+        "Artificial Intelligence",
+        "Fintech",
+        "B2B",
+        "Enterprise",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Finance and Accounting"
+      ],
+      "regions": [
+        "Germany",
+        "Europe"
+      ],
+      "locations": [
+        "Munich, Germany"
+      ],
+      "badges": [
+        "isHiring"
+      ]
+    },
+    {
+      "id": 30710,
+      "name": "Manufact",
+      "slug": "manufact",
+      "website": "https://manufact.com",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/3838f80b214ed1fcda53a2778860e8be11cfdb0d.png",
+      "oneLiner": "Cloud infrastructure for MCP servers and Claude / ChatGPT plugins.",
+      "longDescription": "Manufact is the MCP cloud platform to get your product ready for Claude Connectors marketplace, ChatGPT / Codex plugins store and any AI agent that supports MCP.\r\nWe're the team behind mcp-use SDK, the open-source framework for building MCP Apps with 10k github stars and 10M+ downloads across python and typescript.\r\n\r\nIt's the fastest and most complete solution for production-ready MCP servers.",
+      "teamSize": 5,
+      "url": "https://www.ycombinator.com/companies/manufact",
+      "batch": "S25",
+      "tags": [
+        "Developer Tools",
+        "B2B",
+        "Open Source",
+        "Infrastructure",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "B2B",
+        "Infrastructure"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": [
+        "isHiring"
+      ]
+    },
+    {
+      "id": 30707,
+      "name": "Phases",
+      "slug": "phases",
+      "website": "https://phases.ai",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/7f48e664a460b19faede05bd1de6c49c5d3931a9.png",
+      "oneLiner": "Automated clinical trial oversight and execution",
+      "longDescription": "Phases deploys AI agents to oversee clinical trials, improving operational performance, data quality, and audit readiness by identifying risks and taking actions autonomously to solve issues.",
+      "teamSize": 3,
+      "url": "https://www.ycombinator.com/companies/phases",
+      "batch": "S25",
+      "tags": [
+        "Healthcare IT",
+        "AI",
+        "Conversational AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "Healthcare",
+        "Healthcare IT"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "San Francisco"
+      ],
+      "badges": []
+    },
+    {
+      "id": 30703,
+      "name": "Physical Turing",
+      "slug": "physical-turing",
+      "website": "https://physicalturing.ai/",
+      "smallLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/c87367cd52d809c0b9a6f05ef79f3c162b4dd082.png",
+      "oneLiner": "Evaluating humanoids in the real world",
+      "longDescription": "Physical Turing rolls out humanoids in the real world and captures failures for benchmarking and post-training.\r\n\r\nWe procure, staff, and operate a wide range of target environments for real-world rollouts, helping robot makers, model companies, and enterprises continuously evaluate where humanoids succeed, where they fail, and what needs to improve before each deployment.",
+      "teamSize": 2,
+      "url": "https://www.ycombinator.com/companies/physical-turing",
+      "batch": "S25",
+      "tags": [
+        "Robotics",
+        "B2B",
+        "AI"
+      ],
+      "status": "Active",
+      "industries": [
+        "Industrials",
+        "Manufacturing and Robotics"
+      ],
+      "regions": [
+        "United States of America",
+        "America / Canada"
+      ],
+      "locations": [
+        "New York City"
+      ],
+      "badges": []
+    }
+  ],
+  "nextPage": "https://api.ycombinator.com/v0.1/companies?batch=S25&page=2&status=Active&tags=AI",
+  "page": 1,
+  "totalPages": 3
+}

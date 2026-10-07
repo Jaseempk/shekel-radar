@@ -1,0 +1,24 @@
+{
+  "_comment": "Pain pack: owners venting about manual work, not hiring. Run: node radar.mjs --searches searches-pain.json",
+  "queries": [
+    "spend hours every week on admin",
+    "so much time on paperwork",
+    "drowning in paperwork",
+    "sick of copying and pasting",
+    "manually entering every",
+    "leads falling through the cracks",
+    "forgot to follow up with",
+    "chasing clients for payment",
+    "chasing invoices every month",
+    "doing admin every night after work",
+    "juggling spreadsheets",
+    "our crm is a mess",
+    "missed calls lost jobs",
+    "no shows are killing",
+    "takes me hours to do quotes",
+    "every monday i spend hours",
+    "can't keep up with enquiries",
+    "hate doing the admin side of my business"
+  ],
+  "rubric": "You qualify leads for a freelance automation consultant (Jaseem). He builds workflow automation (follow-ups, reminders, quoting, invoicing chasers, data sync between tools, CRM setup, lead research and scoring, internal document assistants) for small and mid-size businesses.\n\nThese are Facebook posts. Find BUSINESS OWNERS OR OPERATORS venting about repetitive, manual or time-draining work in their own business. They are NOT asking to hire anyone. Two kinds count:\n- aware: they name the problem (\"I spend every Sunday doing invoices\", \"leads keep slipping through\") but don't know it can be automated or how.\n- unaware: they describe a routine as just part of the job without seeing it as a cost (\"every morning I copy the orders into a spreadsheet then text each driver\").\n\nMark buyer=true only for a real business (trades, agencies, clinics, salons, e-commerce, real estate, consultants, small firms) whose pain is plausibly automatable.\n\nMark buyer=false for:\n- sellers, agencies, coaches and brand pages writing pain-point marketing that ends in a CTA, link, 'DM me', 'we help', or a poll that pitches a service. A real venter sells nothing.\n- SELLER MARKET RESEARCH (the most common trap here): survey-style questions aimed at 'owners here' that never describe the poster's own business, e.g. 'honest question for the owners: when you miss a call, what happens? a) b) c)', 'which would you get rid of first?', 'how are you all tracking X?' followed by nothing about themselves; story posts that end in a lesson and a question to the group; brand-sounding names (Compliance, Solutions, AI, Ops, Soft) or throwaway-looking names. A real venter talks about THEIR business: their customers, their tools, their numbers.\n- employees complaining about their boss or job, job seekers, VAs offering services\n- personal life complaints, memes, jokes, politics\n- pain that software can't touch (bad customers in general, the economy, staff attitude)\n\nBusiness size matters most for whether they can pay. Signals of an established business (employees, crews, a team, 'plenty of clients', several locations, revenue mentioned, years in business) push the score up. Solo beginners ('just started', 'first client', 'starting my LLC', 'what products do I need') score below 40 even when the pain is real. Asking which app to use is a mild signal (they want a tool, not a consultant) unless the business is clearly established and the question reveals a messy multi-tool setup.\n\nScore (0-100) = how likely a genuinely helpful reply turns into a paid project: a big, recurring, clearly automatable time drain in an established business scores highest. Set job=false always.\n\nFor each post also set \"pain\" to one line naming the hidden cost in plain words (e.g. \"~5 hrs/week re-typing orders; errors cost refunds\"), and \"aware\" to true or false."
+}

@@ -1,0 +1,295 @@
+{
+  "_comment": "company -> ATS slug map. Add rows freely; the poller queries each board's public JSON API. ats: greenhouse | ashby | lever | workable | recruitee. Seeded from companies already surfaced in this job hunt.",
+  "companies": [
+    {
+      "name": "Arize AI",
+      "ats": "greenhouse",
+      "slug": "arizeai"
+    },
+    {
+      "name": "Mastra",
+      "ats": "ashby",
+      "slug": "Mastra"
+    },
+    {
+      "name": "Cresta",
+      "ats": "greenhouse",
+      "slug": "cresta"
+    },
+    {
+      "name": "LiveKit",
+      "ats": "ashby",
+      "slug": "livekit"
+    },
+    {
+      "name": "Ava Labs",
+      "ats": "ashby",
+      "slug": "ava-labs"
+    },
+    {
+      "name": "Hopper",
+      "ats": "ashby",
+      "slug": "hopper"
+    },
+    {
+      "name": "Decagon",
+      "ats": "ashby",
+      "slug": "decagon"
+    },
+    {
+      "name": "Supabase",
+      "ats": "ashby",
+      "slug": "supabase"
+    },
+    {
+      "name": "ElevenLabs",
+      "ats": "ashby",
+      "slug": "elevenlabs"
+    },
+    {
+      "name": "Weaviate",
+      "ats": "ashby",
+      "slug": "weaviate"
+    },
+    {
+      "name": "Railway",
+      "ats": "ashby",
+      "slug": "railway"
+    },
+    {
+      "name": "Grafana Labs",
+      "ats": "greenhouse",
+      "slug": "grafanalabs"
+    },
+    {
+      "name": "GitLab",
+      "ats": "greenhouse",
+      "slug": "gitlab"
+    },
+    {
+      "name": "Vercel",
+      "ats": "ashby",
+      "slug": "vercel"
+    },
+    {
+      "name": "Anthropic",
+      "ats": "greenhouse",
+      "slug": "anthropic"
+    },
+    {
+      "name": "Langchain",
+      "ats": "ashby",
+      "slug": "langchain"
+    },
+    {
+      "name": "Sierra",
+      "ats": "ashby",
+      "slug": "sierra"
+    },
+    {
+      "name": "Pinecone",
+      "ats": "ashby",
+      "slug": "pinecone"
+    },
+    {
+      "name": "Baseten",
+      "ats": "ashby",
+      "slug": "baseten"
+    },
+    {
+      "name": "Modal Labs",
+      "ats": "ashby",
+      "slug": "modal"
+    },
+    {
+      "name": "Together AI",
+      "ats": "greenhouse",
+      "slug": "togetherai"
+    },
+    {
+      "name": "Fireworks AI",
+      "ats": "ashby",
+      "slug": "fireworks"
+    },
+    {
+      "name": "Braintrust",
+      "ats": "ashby",
+      "slug": "braintrust"
+    },
+    {
+      "name": "Langfuse",
+      "ats": "ashby",
+      "slug": "langfuse"
+    },
+    {
+      "name": "LlamaIndex",
+      "ats": "ashby",
+      "slug": "llamaindex"
+    },
+    {
+      "name": "AfterQuery",
+      "ats": "ashby",
+      "slug": "afterquery"
+    },
+    {
+      "name": "Bernard",
+      "ats": "ashby",
+      "slug": "bernard"
+    },
+    {
+      "name": "Blue",
+      "ats": "lever",
+      "slug": "blue"
+    },
+    {
+      "name": "Boom AI",
+      "ats": "ashby",
+      "slug": "boom"
+    },
+    {
+      "name": "Certus AI",
+      "ats": "recruitee",
+      "slug": "certus"
+    },
+    {
+      "name": "Dex",
+      "ats": "ashby",
+      "slug": "dex"
+    },
+    {
+      "name": "Dock",
+      "ats": "recruitee",
+      "slug": "dock"
+    },
+    {
+      "name": "Finto",
+      "ats": "ashby",
+      "slug": "finto"
+    },
+    {
+      "name": "Haladir",
+      "ats": "ashby",
+      "slug": "haladir"
+    },
+    {
+      "name": "Harper",
+      "ats": "breezy",
+      "slug": "harper"
+    },
+    {
+      "name": "Hyperspell",
+      "ats": "ashby",
+      "slug": "hyperspell"
+    },
+    {
+      "name": "Interfere",
+      "ats": "ashby",
+      "slug": "interfere"
+    },
+    {
+      "name": "Litmus",
+      "ats": "ashby",
+      "slug": "litmus"
+    },
+    {
+      "name": "MangoDesk",
+      "ats": "ashby",
+      "slug": "mangodesk"
+    },
+    {
+      "name": "Marble",
+      "ats": "ashby",
+      "slug": "marble"
+    },
+    {
+      "name": "Mastra",
+      "ats": "ashby",
+      "slug": "mastra"
+    },
+    {
+      "name": "Mesh",
+      "ats": "ashby",
+      "slug": "mesh"
+    },
+    {
+      "name": "Moonshot",
+      "ats": "ashby",
+      "slug": "moonshot"
+    },
+    {
+      "name": "Moss",
+      "ats": "ashby",
+      "slug": "moss"
+    },
+    {
+      "name": "Mundo AI",
+      "ats": "ashby",
+      "slug": "mundo-ai"
+    },
+    {
+      "name": "OpenTag",
+      "ats": "recruitee",
+      "slug": "opentag"
+    },
+    {
+      "name": "Orchestra",
+      "ats": "greenhouse",
+      "slug": "orchestra"
+    },
+    {
+      "name": "Rivet",
+      "ats": "ashby",
+      "slug": "rivet"
+    },
+    {
+      "name": "SalesPatriot",
+      "ats": "ashby",
+      "slug": "salespatriot"
+    },
+    {
+      "name": "Sapien",
+      "ats": "ashby",
+      "slug": "sapien"
+    },
+    {
+      "name": "Torus",
+      "ats": "rippling",
+      "slug": "torus"
+    },
+    {
+      "name": "Tsenta",
+      "ats": "ashby",
+      "slug": "tsenta"
+    },
+    {
+      "name": "Uplane",
+      "ats": "ashby",
+      "slug": "uplane"
+    },
+    {
+      "name": "Velvet",
+      "ats": "teamtailor",
+      "slug": "velvet"
+    },
+    {
+      "name": "Veritus",
+      "ats": "ashby",
+      "slug": "veritus"
+    },
+    {
+      "name": "Wafer",
+      "ats": "ashby",
+      "slug": "wafer"
+    },
+    {
+      "name": "Weave",
+      "ats": "ashby",
+      "slug": "weave"
+    },
+    {
+      "name": "burnt",
+      "ats": "greenhouse",
+      "slug": "burnt"
+    }
+  ]
+}

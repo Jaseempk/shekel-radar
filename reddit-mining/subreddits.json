@@ -1,0 +1,65 @@
+{
+  "_comment": "Tiered subreddit set for AI-automation lead mining. weight is used by find_leads.py to boost/penalize by tier. Non-existent subs just return empty (safe). Trim to the tiers you want before scraping — all of it is high volume.",
+  "tiers": [
+    {
+      "tier": 2,
+      "name": "Occupation & vertical subs — buyers vent, sellers don't lurk (the goldmine)",
+      "weight": 3.0,
+      "subreddits": [
+        "RealEstate", "realtors", "RealEstateTechnology", "PropertyManagement", "Landlord", "CommercialRealEstate",
+        "recruiting", "talentacquisition", "recruitinghell", "AskRecruiters",
+        "InsuranceAgent", "Insurance",
+        "LawFirm", "Lawyertalk", "paralegal", "legaltech",
+        "Accounting", "Bookkeeping", "taxpros", "QuickBooks",
+        "Dentistry", "dentaloffice", "healthIT", "physicaltherapy", "optometry",
+        "HVAC", "Plumbing", "Construction", "Contractor", "roofing", "landscaping", "electricians", "sweatystartup",
+        "logistics", "freightbrokers", "SupplyChain", "Truckers",
+        "ecommerce", "shopify", "FulfillmentByAmazon", "AmazonSeller", "EtsySellers",
+        "PPC", "FacebookAds", "PPCMarketing", "GoogleAds", "Emailmarketing", "SEO", "copywriting", "advertising", "socialmedia",
+        "podcasting", "NewTubers", "Creators", "eventplanning", "weddingplanning", "personaltraining", "Esthetics"
+      ]
+    },
+    {
+      "tier": 3,
+      "name": "Tool-user communities — buyers mid-automation and stuck",
+      "weight": 2.5,
+      "subreddits": [
+        "gohighlevel", "hubspot", "salesforce", "PipedriveCRM", "CRM",
+        "Airtable", "Notion", "ClickUp", "googlesheets", "excel", "PowerBI",
+        "sysadmin", "RPA", "Integromat"
+      ]
+    },
+    {
+      "tier": 5,
+      "name": "Regional / SE-Asia — timezone edge, almost no Western-seller saturation",
+      "weight": 2.5,
+      "subreddits": [
+        "singapore", "askSingapore", "singaporefi",
+        "indonesia", "malaysia", "MalaysianPF",
+        "Philippines", "phinvest",
+        "india", "IndianStartups", "StartUpIndia",
+        "dubai", "UAE"
+      ]
+    },
+    {
+      "tier": 4,
+      "name": "Founder / operator + hiring & subcontract subs (clients AND white-label partners)",
+      "weight": 2.0,
+      "subreddits": [
+        "startups", "indiehackers", "SideProject", "EntrepreneurRideAlong",
+        "smallbusinessowner", "OperationsManagement", "managers", "fractional",
+        "consulting", "forhire", "freelance", "Upwork"
+      ]
+    },
+    {
+      "tier": 1,
+      "name": "Generic high-intent — saturated with sellers; win via old low-comment posts + full-solution replies",
+      "weight": 1.0,
+      "subreddits": [
+        "automation", "n8n", "Zapier", "nocode", "AI_Agents", "SaaS",
+        "Entrepreneur", "smallbusiness", "coldemail", "sales", "msp",
+        "leadgeneration", "DigitalMarketing", "marketing"
+      ]
+    }
+  ]
+}

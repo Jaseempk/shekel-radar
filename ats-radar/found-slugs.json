@@ -1,0 +1,200 @@
+[
+  {
+    "name": "AfterQuery",
+    "ats": "ashby",
+    "slug": "afterquery",
+    "openRoles": 34
+  },
+  {
+    "name": "Bernard",
+    "ats": "ashby",
+    "slug": "bernard",
+    "openRoles": 5
+  },
+  {
+    "name": "Blue",
+    "ats": "lever",
+    "slug": "blue",
+    "openRoles": 9
+  },
+  {
+    "name": "Boom AI",
+    "ats": "ashby",
+    "slug": "boom",
+    "openRoles": 9
+  },
+  {
+    "name": "Certus AI",
+    "ats": "recruitee",
+    "slug": "certus",
+    "openRoles": 6
+  },
+  {
+    "name": "Dex",
+    "ats": "ashby",
+    "slug": "dex",
+    "openRoles": 7
+  },
+  {
+    "name": "Dock",
+    "ats": "recruitee",
+    "slug": "dock",
+    "openRoles": 27
+  },
+  {
+    "name": "Finto",
+    "ats": "ashby",
+    "slug": "finto",
+    "openRoles": 7
+  },
+  {
+    "name": "Haladir",
+    "ats": "ashby",
+    "slug": "haladir",
+    "openRoles": 5
+  },
+  {
+    "name": "Harper",
+    "ats": "breezy",
+    "slug": "harper",
+    "openRoles": 2
+  },
+  {
+    "name": "Hyperspell",
+    "ats": "ashby",
+    "slug": "hyperspell",
+    "openRoles": 1
+  },
+  {
+    "name": "Interfere",
+    "ats": "ashby",
+    "slug": "interfere",
+    "openRoles": 4
+  },
+  {
+    "name": "Litmus",
+    "ats": "ashby",
+    "slug": "litmus",
+    "openRoles": 27
+  },
+  {
+    "name": "MangoDesk",
+    "ats": "ashby",
+    "slug": "mangodesk",
+    "openRoles": 2
+  },
+  {
+    "name": "Marble",
+    "ats": "ashby",
+    "slug": "marble",
+    "openRoles": 9
+  },
+  {
+    "name": "Mastra",
+    "ats": "ashby",
+    "slug": "mastra",
+    "openRoles": 3
+  },
+  {
+    "name": "Mesh",
+    "ats": "ashby",
+    "slug": "mesh",
+    "openRoles": 22
+  },
+  {
+    "name": "Moonshot",
+    "ats": "ashby",
+    "slug": "moonshot",
+    "openRoles": 3
+  },
+  {
+    "name": "Moss",
+    "ats": "ashby",
+    "slug": "moss",
+    "openRoles": 34
+  },
+  {
+    "name": "Mundo AI",
+    "ats": "ashby",
+    "slug": "mundo-ai",
+    "openRoles": 4
+  },
+  {
+    "name": "OpenTag",
+    "ats": "recruitee",
+    "slug": "opentag",
+    "openRoles": 7
+  },
+  {
+    "name": "Orchestra",
+    "ats": "greenhouse",
+    "slug": "orchestra",
+    "openRoles": 29
+  },
+  {
+    "name": "Rivet",
+    "ats": "ashby",
+    "slug": "rivet",
+    "openRoles": 28
+  },
+  {
+    "name": "SalesPatriot",
+    "ats": "ashby",
+    "slug": "salespatriot",
+    "openRoles": 5
+  },
+  {
+    "name": "Sapien",
+    "ats": "ashby",
+    "slug": "sapien",
+    "openRoles": 11
+  },
+  {
+    "name": "Torus",
+    "ats": "rippling",
+    "slug": "torus",
+    "openRoles": 30
+  },
+  {
+    "name": "Tsenta",
+    "ats": "ashby",
+    "slug": "tsenta",
+    "openRoles": 1
+  },
+  {
+    "name": "Uplane",
+    "ats": "ashby",
+    "slug": "uplane",
+    "openRoles": 7
+  },
+  {
+    "name": "Velvet",
+    "ats": "teamtailor",
+    "slug": "velvet",
+    "openRoles": 3
+  },
+  {
+    "name": "Veritus",
+    "ats": "ashby",
+    "slug": "veritus",
+    "openRoles": 2
+  },
+  {
+    "name": "Wafer",
+    "ats": "ashby",
+    "slug": "wafer",
+    "openRoles": 4
+  },
+  {
+    "name": "Weave",
+    "ats": "ashby",
+    "slug": "weave",
+    "openRoles": 27
+  },
+  {
+    "name": "burnt",
+    "ats": "greenhouse",
+    "slug": "burnt",
+    "openRoles": 8
+  }
+]

@@ -1,0 +1,34 @@
+# Credentials and deployment account caches
+.env
+.env.*
+!.env.example
+.wrangler/
+# Runtime state, captures and rebuildable exports
+state/
+data/
+exports/
+**/seen*.json
+**/groups_registry.json
+**/leads*.json*
+**/leads*.csv
+**/leads_drafts.md
+**/roles_*.json
+**/roles_*.md
+**/shortlist_*.md
+**/getro_*.json
+**/getro_*.md
+**/queue_*.json
+**/queue_*.md
+**/run_*.log
+# Dependencies and build products
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+reel/out/
+*.aux
+*.log
+*.out
+.DS_Store
+# Downloaded company directories (retained locally)
+ats-radar/ds_*.json

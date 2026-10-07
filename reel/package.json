@@ -1,0 +1,20 @@
+{
+  "name": "jaseem-reel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts Reel out/reel.mp4 --codec h264 --crf 20",
+    "still": "remotion still src/index.ts Reel out/poster.jpg --frame 330"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4",
+    "react": "^19",
+    "react-dom": "^19",
+    "remotion": "^4"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

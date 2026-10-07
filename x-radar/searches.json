@@ -1,0 +1,25 @@
+{
+  "_comment": "X live-search queries for the radar. Mirrors social-signals.md. Trim or add freely; each run walks all of them.",
+  "queries": [
+    "\"spend hours\" (\"every week\" OR \"every day\") (spreadsheet OR \"data entry\" OR invoices)",
+    "\"there has to be a better way\" (leads OR clients OR invoices OR scheduling)",
+    "\"copy and paste\" (crm OR spreadsheet OR \"every lead\")",
+    "\"drowning in\" (admin OR paperwork OR emails OR spreadsheets)",
+    "\"is there someone who\" (automate OR \"set up\") -crypto",
+    "\"who do I hire\" (automate OR \"ai for my\")",
+    "\"not technical\" (automate OR ai OR workflow)",
+    "\"how do i automate\" -code -n8n -developer",
+    "(realtor OR \"real estate agent\") (\"follow up\" OR leads) (manual OR \"by hand\" OR forgetting)",
+    "(recruiter OR recruiting) (sourcing OR \"candidate research\") (hours OR manual OR tedious)",
+    "(\"my clinic\" OR \"my practice\" OR \"front desk\") (scheduling OR \"no shows\" OR reminders) (manual OR nightmare)",
+    "(contractor OR hvac OR plumbing OR roofing) (quotes OR invoices OR leads) (paperwork OR \"falling behind\")",
+    "\"looking for someone to\" (automate OR \"build an ai\" OR \"set up\" OR \"build a workflow\") -hiring -job",
+    "\"looking for a freelancer\" (automation OR ai OR zapier OR n8n OR make.com OR airtable)",
+    "\"need someone to build\" (automation OR \"ai agent\" OR chatbot OR workflow OR integration)",
+    "\"anyone know\" (\"automation expert\" OR \"ai developer\" OR \"zapier expert\" OR \"n8n expert\")",
+    "(recommend OR recommendations) (\"automation freelancer\" OR \"ai consultant\" OR \"automation agency\") -\"we help\"",
+    "(\"our docs\" OR \"internal wiki\" OR \"knowledge base\") (\"ai assistant\" OR chatbot) (\"looking for\" OR \"need someone\")",
+    "(\"lead enrichment\" OR \"lead scoring\" OR \"prospect research\") (\"looking for\" OR \"need help\" OR recommend) -\"we built\"",
+    "\"paying someone\" (automate OR \"set up\" OR \"build\") (crm OR leads OR invoices OR onboarding)"
+  ]
+}

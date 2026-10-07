@@ -1,0 +1,11 @@
+company,website,industry,employees,region,notes
+Northwind SaaS,northwind.example,B2B SaaS,85,United States,hiring 2 SDRs; Series A last year
+Bluepeak Consulting,bluepeak.example,Professional services,40,United Kingdom,uses HubSpot; outbound team
+Corner Cafe Group,cornercafe.example,Food & beverage,12,United States,B2C chain; no sales team
+Vertex Robotics,vertex.example,Industrial hardware,150,Germany,enterprise sales motion; CRM in place
+Tiny Yoga Studio,tinyyoga.example,Fitness,4,United States,local B2C; no website traffic
+Halcyon Data,halcyondata.example,B2B SaaS,60,Canada,recently raised seed; scaling outbound
+Meridian Agency,meridian.example,Marketing agency,18,United States,resells to local restaurants
+Orbit Fintech,orbitfintech.example,Fintech,110,Singapore,B2B; hiring VP Sales
+Greenfield Nonprofit,greenfield.example,Nonprofit,25,United States,grant-funded; no commercial sales
+Latitude Logistics,latitude.example,Logistics tech,95,Netherlands,B2B SaaS for freight; SDR team

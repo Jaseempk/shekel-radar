@@ -1,0 +1,218 @@
+10x Science
+83 Sciences
+AfterQuery
+Agentin AI
+Allus AI
+Alter
+Amika
+Antigen
+Approxima
+Astor
+Astro
+Atlia
+Audun
+Bernard
+Bizmark
+Bizzy AI
+Blue
+Bluebook
+Boom AI
+Brickanta
+Bron
+Browser Use
+Bubble Lab
+Buildbox
+COACH
+Cactus Compute
+Callbook AI
+Calltree
+Candor
+CarSignal
+Cardamon
+Care GP
+Carrot Labs
+Cenote
+Certus AI
+Cifrato
+ClaimGlide
+Clerked
+Closure
+Codyco
+ComplyDo
+Compyle
+Confident AI
+Context.dev
+ContextFort
+Contrario
+Corelayer
+Corvera
+Cova
+Daqstra
+Delineate
+Denki
+Dex
+Digipals
+Dipole Labs
+Dock
+Dream
+Enact
+Ergo
+Evergrove
+Exosat
+F2
+Familiar
+Fastshot
+Fenrock AI
+Fifth Door
+Finto
+Freeport Markets
+Gamgee
+General Trajectory
+GhostEye
+GitCafe
+Glen
+Goldbridge
+Grade
+Haladir
+Harbera
+Harper
+Hebbian Robotics
+Hoplite
+Humoniq
+Hyperspell
+Induction Labs
+Inkbox
+Instaplay
+Insurf
+Interfere
+InventoryQuant
+Kebra
+Kestroll
+LATO
+LLM Stats
+Lamb Labs
+Lanesurf
+Lapis
+Leadbay
+Lemma
+LemonLime
+Lexi
+Libra Robotics
+Lilac
+Liquid Compute
+Litmus
+Liva AI
+Locke
+Locus
+Logical
+Luca IQ
+LunaBill
+MOVEdot
+MSPilot
+Magma
+Magnitude
+Maingen
+MangoDesk
+Manufact
+Marble
+MarkIt
+Marker
+Mastra
+Mesh
+Mireye
+Monte
+Moonshot
+Moss
+Mundo AI
+Narrative
+Nebula Security
+Nitrode
+Nivara
+Norra
+Notte
+Oki
+Okibi
+Omanta
+OneCLI
+OpenRelay
+OpenTag
+Orchestra
+Ossus
+Pacific
+Palisade
+Panoptive
+Parasma
+Pennant
+Phases
+Physical Turing
+Piggy Robotics
+Pinch
+Pixley AI
+Playgent
+Pleom
+Pluto
+ProcIndex
+Prodigy Research
+Proprio Robotics
+Prox
+Quotain
+Rally
+RealPact
+Rebolt
+Rebulk
+Redapto
+Ressl AI
+Rindler
+Riverbank
+Rivet
+Riviera
+Roark
+SalesPatriot
+Sapien
+Sciloop
+Seeing Systems
+Semble
+Sennu AI
+SigmanticAI
+Sorce
+Soren
+Specific
+Speko
+Standard Machines
+Stillwind
+Stoa
+Stockline
+Studio
+Synapse Semiconductor
+Tergle
+Tesora
+The Context Company
+Thesis
+Topological
+Torus
+Touchy
+Trace
+TraceRoot.AI
+Tracer
+Traverse
+Trelium
+Trim
+Tsenta
+Tweeks.io
+Uplane
+Velvet
+Verbiflow
+Verdant
+Verdict Machine
+Veria Labs
+Veritus
+Vetnio
+Wafer
+Weave
+Wildcard
+Wondering
+Woz
+Zarna
+burnt
+o11
+superglue

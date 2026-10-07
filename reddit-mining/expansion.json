@@ -1,0 +1,27 @@
+{
+  "niche_name": "AI-automation leads (agencies + SMB ops)",
+  "niche_summary": "People describing manual/repetitive lead research, data entry, or knowledge lookup — buyers for Offer B (lead pipeline) or Offer A (doc assistant).",
+  "subreddits": [
+    "RealEstate", "realtors", "PropertyManagement", "recruiting", "talentacquisition", "recruitinghell",
+    "InsuranceAgent", "LawFirm", "paralegal", "Accounting", "Bookkeeping", "Dentistry", "HVAC", "Plumbing",
+    "Contractor", "roofing", "sweatystartup", "freightbrokers", "logistics", "ecommerce", "shopify",
+    "AmazonSeller", "PPC", "FacebookAds", "Emailmarketing", "SEO", "gohighlevel", "hubspot", "Airtable",
+    "ClickUp", "sysadmin", "singapore", "askSingapore", "indonesia", "malaysia", "Philippines", "phinvest",
+    "IndianStartups", "StartUpIndia", "smallbusinessowner", "OperationsManagement", "startups", "indiehackers"
+  ],
+  "keywords": [
+    "manual", "manually", "by hand", "copy paste", "copy and paste", "spreadsheet", "google sheet",
+    "hours every", "takes hours", "so much time", "time consuming", "tedious", "repetitive", "drowning in",
+    "hire a va", "virtual assistant", "data entry", "one by one", "falling through the cracks",
+    "how do i automate", "how to automate", "is there a tool", "is there a way to", "any tool that",
+    "looking for someone to build", "need a developer", "can someone build", "willing to pay",
+    "recommend a tool", "best tool for", "automate this", "streamline",
+    "lead list", "prospect list", "list building", "lead gen", "lead generation", "enrich", "scrape leads",
+    "find leads", "qualify leads", "score leads", "cold email list", "prospecting", "find contacts",
+    "knowledge base", "internal docs", "sops", "onboarding docs", "answer questions from", "chatbot for our",
+    "train on our", "documentation", "faq bot"
+  ],
+  "negative_keywords": [
+    "looking for a job", "hire me", "i'm available for", "my resume", "meme", "giveaway", "upvote if"
+  ]
+}
