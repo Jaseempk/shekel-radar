@@ -28,7 +28,7 @@ import { openTab, sleep } from '../lib/cdp.mjs';
 const SEARCH_FILE = option('--searches', 'searches.json');
 const __pack = path.basename(SEARCH_FILE, '.json').replace(/^searches-?/, '');
 const SEEN_PATH = path.join(HERE, __pack ? `seen_${__pack}.json` : 'seen.json');
-const MODEL = process.env.INCOME_SOCIAL_MODEL || settings.socialModel;
+const MODEL = settings.socialModel; // INCOME_SOCIAL_MODEL overrides via lib/runtime.mjs
 const MIN_SCORE = settings.minimumBuyerScore;
 const MAX_AGE_DAYS = integerOption('--max-age-days', 45, 1);
 const MAX_REPLIES = integerOption('--max-replies', Number.MAX_SAFE_INTEGER);
@@ -78,7 +78,6 @@ function dayStamp(offset) {
 
 async function runSearches() {
   // --searches <file>: alternate search pack (e.g. searches-jobs.json). Default: searches.json
-  const sIdx = process.argv.indexOf('--searches');
   const searchFile = SEARCH_FILE;
   const pack = JSON.parse(fs.readFileSync(path.resolve(HERE, searchFile), 'utf8'));
   const baseQueries = pack.queries;

@@ -4,12 +4,12 @@
   "minimumBuyerScore": 55,
   "rawRetentionDays": 30,
   "exportRetentionDays": 90,
-  "candidateLocation": "Kazakhstan (UTC+5)",
+  "maxRawMB": 1024,
+  "candidateLocation": "Remote (worldwide)",
   "profile": {
-    "name": "Jaseem",
-    "website": "jaseem.co",
-    "proof": "Built and runs the AI operations platform at a mid-sized company, after running operations there.",
+    "name": "",
+    "website": "",
+    "proof": "",
     "claimsRule": "No precise before/after metrics are available. Do not invent hours saved, percentages, customers or funding."
-  },
-  "maxRawMB": 1024
+  }
 }

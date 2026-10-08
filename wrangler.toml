@@ -1,2 +1,5 @@
+# Optional: the owner's Cloudflare Pages deployment for the portfolio in `site/`.
+# `site/` is local-only and ignored by Git, so this file does nothing in a fresh clone.
+# Nothing in the toolkit, tests or CI deploys; deployment is a manual owner action.
 name = "jaseem-automation"
 pages_build_output_dir = "site"

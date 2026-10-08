@@ -23,10 +23,8 @@ const PACK_FILE = option('--searches', 'searches.json');
 const PACK = path.basename(PACK_FILE, '.json').replace(/^searches-?/, '');
 const TAG = PACK ? `_${PACK}` : '';
 const SEEN_PATH = path.join(HERE, 'seen.json');
-const MODEL = process.env.INCOME_SOCIAL_MODEL || settings.socialModel;
+const MODEL = settings.socialModel; // INCOME_SOCIAL_MODEL overrides via lib/runtime.mjs
 const MIN_SCORE = settings.minimumBuyerScore;
-const argVal = (f, d) => { const i = process.argv.indexOf(f); return i > -1 ? process.argv[i + 1] : d; };
-const MAX_AGE_DAYS = parseInt(argVal('--max-age-days', '45'), 10);
 const SCROLLS = 3;
 const PAUSE = () => 9000 + Math.random() * 12000;
 

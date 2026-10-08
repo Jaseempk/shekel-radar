@@ -17,7 +17,8 @@ Run:
   python3 draft_leads.py --leads leads.json --limit 150
 Resumable: use --resume to retry saved pending work; completed posts are skipped.
 
-Needs ANTHROPIC_API_KEY (env or .env). Arctic Shift needs no key.
+Needs ANTHROPIC_API_KEY (env or .env) and the sender profile in config/settings.local.json
+(name, website, proof, claimsRule); --export-only needs neither. Arctic Shift needs no key.
 """
 import argparse
 import csv
@@ -34,20 +35,21 @@ from pathlib import Path
 import sys
 import io
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from lib.runtime import ROOT, DATA_ROOT, SETTINGS, anthropic_client, atomic_write, write_json
+from lib.runtime import ROOT, DATA_ROOT, SETTINGS, SettingsError, anthropic_client, atomic_write, require_profile, write_json
 from lib.opportunities import QualificationStore, validate_reddit
 
 MODEL = SETTINGS["draftModel"]
 ARCTIC = "https://arctic-shift.photon-reddit.com/api"
-MIN_BUYER_SCORE = 55  # include in the final queue only at/above this
+MIN_BUYER_SCORE = SETTINGS["minimumBuyerScore"]  # include in the final queue only at/above this
 
 PROMPT = """You help a freelance engineer decide whether a Reddit poster is a genuine potential CLIENT for AI-automation services, and if so, draft a reply.
 
-THE ENGINEER (you are drafting as him):
+THE ENGINEER (you are drafting as {name}):
 - Builds AI automations for businesses. Two offers:
   - Offer B: lead-enrichment + AI-scoring pipelines (source -> enrich -> score 0-100 -> into their CRM).
   - Offer A: RAG assistants trained on a company's internal docs/SOPs (instant sourced answers).
-- Proof: automated a mid-sized company's operations end to end.
+- Proof (approved sender fact; use only this): {proof}
+- Claims rule: {claims_rule}
 
 THE POST (a potential lead):
 - Subreddit: r/{sub}
@@ -67,7 +69,7 @@ TASK:
 1) Decide if the AUTHOR is a genuine potential BUYER: a business owner, operator, agency, or working professional with real, ongoing manual/repetitive work that these automations would remove, who could plausibly pay.
    NOT a buyer: someone building or validating their OWN competing tool/SaaS; a freelancer or agency selling the same automation service; a hobbyist or student; someone just chatting; or a post where the keywords matched only loosely/off-topic.
 2) buyer_score: 0-100 confidence they are a real, payable buyer with this pain.
-3) If is_buyer is true (score >= 55), write draft_reply — a Reddit comment that:
+3) If is_buyer is true (score >= {min_score}), write draft_reply — a Reddit comment that:
    - HELPS FIRST: one or two concrete, specific things you'd actually do about THEIR exact problem. Real substance, no fluff, don't restate their question.
    - Sounds like a real person firing off a quick helpful reply — casual, plain, contractions, a bit offhand. NOT polished, NOT essay-like. Vary sentence length; slightly imperfect is good.
    - AVOID these AI tells: no "it's not X, it's Y" constructions, no "the trick is", no "that way you're not...", no neat wrap-up summary sentence, no corporate tone, no emojis, no links, no "I'd love to"/"feel free to".
@@ -149,12 +151,13 @@ def _parse_json(text):
         raise
 
 
-def qualify_and_draft(client, lead):
-    pid = post_id_from_url(lead.get("url", ""))
-    body = fetch_body(pid)
-    time.sleep(0.3)
-    top_subs, post_titles, comment_snips = author_profile(lead.get("author", ""))
-    prompt = PROMPT.format(
+def build_prompt(lead, body, top_subs, post_titles, comment_snips, profile, min_score=MIN_BUYER_SCORE):
+    """Fill the prompt with the lead and the same approved profile facts every drafter uses."""
+    return PROMPT.format(
+        name=profile["name"],
+        proof=profile["proof"],
+        claims_rule=profile["claimsRule"],
+        min_score=min_score,
         sub=lead.get("subreddit", ""),
         title=lead.get("title", ""),
         body=(body or "(no body text)")[:600],
@@ -164,6 +167,14 @@ def qualify_and_draft(client, lead):
         post_titles=post_titles,
         comment_snips=comment_snips,
     )
+
+
+def qualify_and_draft(client, lead, profile, min_score=MIN_BUYER_SCORE):
+    pid = post_id_from_url(lead.get("url", ""))
+    body = fetch_body(pid)
+    time.sleep(0.3)
+    top_subs, post_titles, comment_snips = author_profile(lead.get("author", ""))
+    prompt = build_prompt(lead, body, top_subs, post_titles, comment_snips, profile, min_score)
     resp = client.messages.create(
         model=MODEL,
         max_tokens=1500,
@@ -230,6 +241,14 @@ def main():
     args = ap.parse_args()
 
     MODEL = args.model
+    profile = None
+    if not args.export_only:
+        # Drafting needs approved sender facts; export-only rebuilds do not.
+        try:
+            profile = require_profile()
+        except SettingsError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
 
     namespace = 'reddit:buyers'
     store = QualificationStore(DATA_ROOT / 'state/opportunities.sqlite')
@@ -243,7 +262,7 @@ def main():
             client = anthropic_client() if pending else None
             for i, lead in enumerate(pending, 1):
                 try:
-                    record = qualify_and_draft(client, lead)
+                    record = qualify_and_draft(client, lead, profile, args.min_score)
                     store.complete(namespace, record)
                 except Exception as e:
                     store.fail(namespace, lead, e)

@@ -68,20 +68,18 @@ def main():
     failures = []
     for i, ld in enumerate(leads, 1):
         pid = post_id_from_url(ld.get("url", ""))
-        seller = False
         if not pid:
             failures.append({**ld, 'seller_check': 'unknown', 'error': 'No valid Reddit post ID'})
             continue
-        if pid:
-            try:
-                comments = fetch_comments(pid)
-            except Exception as e:
-                failures.append({**ld, 'seller_check': 'unknown', 'error': str(e)})
-                print(f"  seller check unavailable: {pid}")
-                continue
-            ld["num_comments"] = len(comments)
-            seller = any(any(s in (c.get("body") or "").lower() for s in SELLER) for c in comments)
-            time.sleep(0.5)  # ~2 req/s
+        try:
+            comments = fetch_comments(pid)
+        except Exception as e:
+            failures.append({**ld, 'seller_check': 'unknown', 'error': str(e)})
+            print(f"  seller check unavailable: {pid}")
+            continue
+        ld["num_comments"] = len(comments)
+        seller = any(any(s in (c.get("body") or "").lower() for s in SELLER) for c in comments)
+        time.sleep(0.5)  # ~2 req/s
         contested = seller or ld.get("num_comments", 0) > args.max_comments
         ld["contested"] = "yes" if contested else "no"
         ld["seller_check"] = "complete"
