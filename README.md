@@ -105,12 +105,20 @@ Ranking uses the latest snapshot for each source, rejects old source files (30 d
 
 ```sh
 # Collect companies hiring for potentially automatable work.
-python3 tools/run.py buyers --pages 4
+python3 tools/run.py buyers --pages 4 --max-age-days 30 --descriptions 25
 python3 tools/run.py buyer-feeds
 python3 tools/run.py buyer-feeds --ats --limit 300
 ```
 
 The ATS sweep uses the existing downloaded `ats-radar/ds_*.json` directories, which are retained locally but not committed. Feed and Workable modes do not require them.
+
+Both collectors deduplicate repeated query hits by the source's job ID (distinct jobs with identical titles stay distinct) and exclude postings older than `--max-age-days` (default 30), measured from the source's posting date, not the collection date. A missing or malformed posting date is flagged `unknown` and needs review; no date is invented. Excluded jobs and their reasons are kept in the run's `.evidence.json`.
+
+Only the Workable collector (`buyers`) qualifies jobs by their description. After the cheap title and age filters it fetches descriptions for a bounded shortlist (`--descriptions N`, default 25 jobs; at most two requests per job, a 15-second timeout and a 1.5 MB body cap per request; `--no-descriptions` skips fetching). It tries Workable's job API first and falls back to the job page's schema.org `JobPosting` data. Deterministic duty rules in `lib/buyers.mjs` (no model calls) assign each job one status: `qualified` (at least two concrete repeated research/data duties, no blockers, fresh known posting date), `rejected` (in-person retail/event work or mainly customer support), `review` (outsourced/BPO, regulated, strategic or quota-carrying, non-English, weak or unclear duties, or unknown date), `insufficient` (removed, closed, missing, malformed or oversized description), `retry` (timeout, network error, HTTP 429/5xx) or `not-fetched` (outside the shortlist or request budget). Each job's `qualification` field records the status, reasons, quoted duty evidence, the offer (`A`, `B` or `ops`) and the description's fetch status, source URL and timestamp. Descriptions are cached in `state/buyer-signals/workable-descriptions.json` for seven days; retryable failures are fetched again on the next run. Regional copies of one opening (same company and title once location words are removed, unless their descriptions differ) count once toward company priority.
+
+The Workable `workable_RUN.json` snapshot contains only qualified companies and roles. `workable_RUN.review.json` has the same shape and holds everything that needs a person; use it with `outreach prepare` only after reviewing those roles. Search failures or retryable description failures make the run exit nonzero; see `.status.json`. Qualification is a guess about whether the workflow fits. A job opening does not show buying intent or budget, or that the company wants to replace staff.
+
+`buyer-feeds` (aggregator feeds and the ATS sweep) qualifies by title only: its rows are marked `qualification.status: "title-only"` and carry no company website, so `outreach prepare` lists them as unresolved until you supply a reviewed domain mapping.
 
 Use the exact JSON snapshot printed by collection. The workflow has explicit stages and does not require hand-built `draft_data.json` files:
 

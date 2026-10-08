@@ -9,8 +9,14 @@
  *   --ats    company ATS boards from the slug datasets in ../ats-radar/ds_*.json
  *            (15k+ boards; use --limit to sample, it polls ~1/sec by design)
  *
- * Run:  node find-buyers.mjs
+ * Run:  node find-buyers.mjs [--max-age-days N]
  *       node find-buyers.mjs --ats --limit 400
+ *
+ * Qualification here is title-only (lib/buyers.mjs classify). Unlike the Workable
+ * collector these rows carry no company website and no description evidence, so
+ * outreach treats them as unresolved until a reviewed domain mapping is supplied.
+ * Jobs are deduplicated by source identity and filtered by posting age where the
+ * source reports a posting date; rows without one are kept but flagged unknown.
  *
  * Output: buyers_YYYY-MM-DD.md + .json
  */
@@ -19,10 +25,11 @@ import path from 'node:path';
 import { fetchBoard } from '../lib/ats.mjs';
 import { classify } from '../lib/buyers.mjs';
 import { exportPath, atomicWrite, integerOption, runStamp } from '../lib/runtime.mjs';
+import { DEFAULT_MAX_AGE_DAYS, parsePostedAt, freshness, dedupeByIdentity } from '../lib/signals.mjs';
 import { fileURLToPath } from 'node:url';
 
 export async function main() {
-  if (process.argv.includes('--help')) { console.log('Buyer signals: --feeds (default) | --ats --limit N. Results: exports/buyer-signals.'); return; }
+  if (process.argv.includes('--help')) { console.log(`Buyer signals: --feeds (default) | --ats --limit N; --max-age-days N (default ${DEFAULT_MAX_AGE_DAYS}, by posting date). Title-only qualification. Results: exports/buyer-signals.`); return; }
 
   const HERE = path.dirname(fileURLToPath(import.meta.url));
   const argv = process.argv.slice(2);
@@ -43,31 +50,36 @@ export async function main() {
     } catch (e) { errors.push(e.message); return null; }
   }
 
+  const maxAgeDays = integerOption('--max-age-days', DEFAULT_MAX_AGE_DAYS, 0);
+  const now = new Date();
+  const fetchedAt = now.toISOString();
   const errors = [];
   const rows = [];
-  const push = (company, title, url, source, location = '') => {
+  const push = (company, title, url, source, location = '', { sourceId = null, posted = null } = {}) => {
     const c = classify(title || '');
     if (!c) return;
-    rows.push({ company: company || '?', title, url, source, location, ...c });
+    const identity = sourceId ?? url ?? `${company}::${title}`;
+    rows.push({ company: company || '?', title, url, source, location, sourceId: sourceId == null ? null : String(sourceId),
+      jobId: `${source}:${identity}`, postedAt: parsePostedAt(posted, now), fetchedAt, queries: [source], qualification: { status: 'title-only' }, ...c });
   };
 
   // ---------- free aggregator feeds ----------
   async function feeds() {
     const rok = await getJson('https://remoteok.com/api');
     for (const j of (rok ?? []).filter((x) => x && x.position))
-      push(j.company, j.position, j.url || j.apply_url, 'RemoteOK', j.location);
+      push(j.company, j.position, j.url || j.apply_url, 'RemoteOK', j.location, { sourceId: j.id, posted: j.date ?? j.epoch });
 
     const arb = await getJson('https://www.arbeitnow.com/api/job-board-api');
     for (const j of (arb?.data ?? []))
-      push(j.company_name, j.title, j.url, 'Arbeitnow', (j.location || ''));
+      push(j.company_name, j.title, j.url, 'Arbeitnow', (j.location || ''), { sourceId: j.slug, posted: j.created_at });
 
     const rmv = await getJson('https://remotive.com/api/remote-jobs');
     for (const j of (rmv?.jobs ?? []))
-      push(j.company_name, j.title, j.url, 'Remotive', j.candidate_required_location);
+      push(j.company_name, j.title, j.url, 'Remotive', j.candidate_required_location, { sourceId: j.id, posted: j.publication_date });
 
     const him = await getJson('https://himalayas.app/jobs/api');
     for (const j of (him?.jobs ?? []))
-      push(j.companyName, j.title, j.applicationLink || j.guid, 'Himalayas', (j.locationRestrictions || []).join(', '));
+      push(j.companyName, j.title, j.applicationLink || j.guid, 'Himalayas', (j.locationRestrictions || []).join(', '), { sourceId: j.guid, posted: j.pubDate });
   }
 
   // ---------- company ATS boards ----------
@@ -91,7 +103,7 @@ export async function main() {
     for (let i = 0; i < take.length; i += CONC) {
       await Promise.all(take.slice(i, i + CONC).map(async ([ats_, slug]) => {
         try {
-          for (const j of await fetchBoard(ats_, slug)) push(slug, j.title, j.url, `ATS:${ats_}`, j.location);
+          for (const j of await fetchBoard(ats_, slug)) push(slug, j.title, j.url, `ATS:${ats_}`, j.location, { sourceId: j.sourceId, posted: j.postedAt });
         } catch (e) { errors.push(e.message); }
       }));
       done += CONC;
@@ -102,31 +114,35 @@ export async function main() {
 
   if (flag('--ats')) await ats(); else await feeds();
 
-  // dedupe + rank
-  const seen = new Set();
-  const uniq = rows.filter((r) => {
-    const k = `${(r.company || '').toLowerCase()}::${(r.title || '').toLowerCase()}`;
-    if (seen.has(k)) return false; seen.add(k); return true;
-  });
-  uniq.sort((a, b) => b.score - a.score);
+  // Dedupe by source identity (distinct same-title jobs stay distinct), then filter by posting age.
+  const excluded = [];
+  const uniq = [];
+  for (const r of dedupeByIdentity(rows)) {
+    const f = freshness(r.postedAt, now, maxAgeDays);
+    const row = { ...r, freshness: f.freshness, ageDays: f.ageDays, ...(f.reason ? { freshnessReason: f.reason } : {}) };
+    if (f.freshness === 'stale') excluded.push({ ...row, excludedReason: f.reason }); else uniq.push(row);
+  }
+  const FRESH = { fresh: 0, unknown: 1 };
+  uniq.sort((a, b) => b.score - a.score || FRESH[a.freshness] - FRESH[b.freshness] || String(b.postedAt ?? '').localeCompare(String(a.postedAt ?? '')));
 
   const day = runStamp();
   const out = exportPath('buyer-signals', `buyers_${day}.md`);
-  const lines = [`# Buyer signals — ${day} — ${uniq.length} companies hiring for automatable work\n`,
-    `Each row is a company paying a salary for work your pipeline removes. Budget exists, pain is current, no vendor chosen.\n`];
+  const lines = [`# Buyer signals — ${day} — ${uniq.length} postings with automatable-sounding titles\n`,
+    `Title-only matches: duties, buying intent and budget are unverified. Posting-age cutoff ${maxAgeDays} days; ${excluded.length} older postings excluded (see .evidence.json).\n`];
   const byWhy = {};
   for (const r of uniq) (byWhy[r.why] ??= []).push(r);
   for (const [why, list] of Object.entries(byWhy)) {
     lines.push(`## ${why} (${list.length})`);
-    for (const r of list) lines.push(`- **${r.company}** — ${r.title}${r.location ? ` · ${r.location.slice(0,40)}` : ''}\n  ${r.url}`);
+    for (const r of list) lines.push(`- **${r.company}** — ${r.title}${r.location ? ` · ${r.location.slice(0,40)}` : ''} · ${r.freshness === 'fresh' ? `posted ${r.ageDays}d ago` : 'posting date unknown'}\n  ${r.url}`);
     lines.push('');
   }
   atomicWrite(out, lines.join('\n'));
   atomicWrite(out.replace(/\.md$/, '.json'), JSON.stringify(uniq, null, 2));
-  console.log(`\n${uniq.length} buyer signals -> ${path.basename(out)}`);
+  atomicWrite(out.replace(/\.md$/, '.evidence.json'), JSON.stringify({ maxAgeDays, collectedAt: fetchedAt, excluded }, null, 2));
+  console.log(`\n${uniq.length} buyer signals (${excluded.length} older than ${maxAgeDays}d excluded) -> ${out.replace(/\.md$/, '.json')}`);
   console.log(Object.fromEntries(Object.entries(byWhy).map(([k, v]) => [k, v.length])));
 
-  atomicWrite(out.replace(/\.md$/, '.status.json'), JSON.stringify({ errors, count: uniq.length }, null, 2));
+  atomicWrite(out.replace(/\.md$/, '.status.json'), JSON.stringify({ errors, count: uniq.length, excludedStale: excluded.length, unknownDates: uniq.filter(r => r.freshness === 'unknown').length, maxAgeDays, qualification: 'title-only' }, null, 2));
   if (errors.length) { console.error(`${errors.length} sources failed; see status snapshot`); process.exitCode = 1; }
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
