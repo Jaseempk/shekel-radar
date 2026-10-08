@@ -38,3 +38,10 @@ reel/out/
 .DS_Store
 # Downloaded company directories (retained locally)
 ats-radar/ds_*.json
+# Personal profile copy, job-hunt notes and third-party prospect lists stay local
+/fde-job-hunt.md
+/linkedin-profile.md
+/github-profile-README.md
+/prospects-agencies.md
+/email-finder/prospects.json
+/email-finder/job-prospects.json
