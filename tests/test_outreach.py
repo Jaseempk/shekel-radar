@@ -1,6 +1,7 @@
 import csv
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -9,6 +10,8 @@ import unittest
 from lib.outreach import prepare_prospects, select_contacts, draft_template, domain_name
 
 ROOT = Path(__file__).resolve().parents[1]
+PROFILE = {'name': 'Test Sender', 'website': 'example.test', 'proof': 'Shipped a synthetic project.',
+           'claimsRule': 'Do not invent numbers.'}
 
 
 class OutreachTests(unittest.TestCase):
@@ -48,33 +51,41 @@ class OutreachTests(unittest.TestCase):
 
     def test_offer_b_routes_to_lead_pipeline_without_invented_metrics(self):
         prospects, _ = prepare_prospects([self.signal()], {})
-        draft = draft_template({**prospects[0], 'to': 'hello@example.com'})
+        draft = draft_template({**prospects[0], 'to': 'hello@example.com'}, profile=PROFILE)
         self.assertEqual(draft['offer'], 'B')
         self.assertIn('rank prospect lists', draft['body'])
         self.assertNotIn('15 hours', draft['body'])
         self.assertNotIn('assistant over internal', draft['body'])
 
     def test_full_offline_workflow_from_unrelated_directory(self):
-        with tempfile.TemporaryDirectory() as temp:
+        with tempfile.TemporaryDirectory() as temp, tempfile.TemporaryDirectory() as cwd:
             base = Path(temp); signals = base/'signals.json'; contacts = base/'contacts.csv'; run = base/'run'
+            decisions = base/'review.json'; local = base/'local.json'
+            local.write_text(json.dumps({'profile': PROFILE}))
+            env = {**os.environ, 'INCOME_SETTINGS_LOCAL': str(local), 'INCOME_DATA_DIR': temp}
             signals.write_text(json.dumps([self.signal()]))
+            decisions.write_text(json.dumps([{'company': 'Example Studio', 'domain': 'example.com', 'decision': 'accepted',
+                'reason': 'Role includes list research', 'reviewed_at': '2026-10-08', 'role': 'https://jobs.example.test/1',
+                'offer': 'B', 'hypothesis': 'Research could be partly automated.'}]))
             with contacts.open('w', newline='') as out:
-                writer = csv.DictWriter(out, fieldnames=['company','domain','email','source','source_url','smtp'])
-                writer.writeheader(); writer.writerow({'company':'Example Studio','domain':'example.com','email':'hello@example.com','source':'scraped','source_url':'https://example.com/contact','smtp':'valid'})
-            command = [sys.executable, str(ROOT/'buyer-signals/workflow.py')]
-            result = subprocess.run(command+['run','--signals',str(signals),'--contacts',str(contacts),'--run',str(run)],cwd=temp,capture_output=True,text=True)
+                writer = csv.DictWriter(out, fieldnames=['company','domain','email','source','source_url','smtp','smtp_reason'])
+                writer.writeheader(); writer.writerow({'company':'Example Studio','domain':'example.com','email':'hello@example.com','source':'scraped',
+                    'source_url':'https://example.com/contact','smtp':'valid','smtp_reason':'control-rejected+target-accepted: 550 5.1.1 / 250'})
+            command = [sys.executable, str(ROOT/'tools/run.py'), 'outreach']
+            result = subprocess.run(command+['run','--signals',str(signals),'--contacts',str(contacts),'--decisions',str(decisions),'--run',str(run)],
+                                    cwd=cwd,env=env,capture_output=True,text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads((run/'drafts.json').read_text())[0]['offer'], 'B')
             old = (run/'send-queue.md').read_text()
             self.assertIn('Contact evidence: https://example.com/contact', old)
-            result = subprocess.run(command+['draft','--run',str(run)],cwd=temp,capture_output=True,text=True)
+            self.assertIn('Shipped a synthetic project.', old)
+            result = subprocess.run(command+['draft','--run',str(run)],cwd=cwd,env=env,capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stderr)
             self.assertEqual((run/'send-queue.md').read_text(),old)
             contacts_copy=run/'emails.csv'; contacts_copy.write_text(contacts_copy.read_text()+'\n')
-            result=subprocess.run(command+['draft','--run',str(run)],cwd=temp,capture_output=True,text=True)
+            result=subprocess.run(command+['draft','--run',str(run)],cwd=cwd,env=env,capture_output=True,text=True)
             self.assertNotEqual(result.returncode,0)
             self.assertIn('Contacts changed',result.stderr)
-
 
 if __name__ == '__main__':
     unittest.main()
