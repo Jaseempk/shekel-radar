@@ -5,6 +5,8 @@
 .wrangler/
 # Personal resume source, documents and generated files stay local
 /resume/
+# Portfolio website stays in the local codebase only
+/site/
 # Runtime state, captures and rebuildable exports
 state/
 data/

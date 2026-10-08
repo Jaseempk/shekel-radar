@@ -36,7 +36,8 @@ All commands work from another directory when invoked by absolute path. User-sup
 | `data/raw/` | Disposable scraped captures |
 | `exports/` | Rebuildable queues and collection snapshots |
 | `tests/` | Offline failure, recovery, adapter, workflow and command tests |
-| `site/`, `reel/`, `demos/` | Portfolio and demonstration assets |
+| `site/` | Local portfolio website (ignored by Git) |
+| `reel/`, `demos/` | Promotional reel and demonstration assets |
 
 Credentials, databases, caches, generated data, dependencies and downloaded ATS directories are excluded from Git. Reusable source lists remain in their current folders. Existing `seen*.json` files are imported on first use and retained locally. Those historical IDs suppress rediscovery; deleting old queues does not recreate their deleted content.
 
