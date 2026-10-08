@@ -1,4 +1,4 @@
-# Income System
+# Shekel Radar
 
 A local toolkit for finding consulting clients and engineering roles, qualifying opportunities, and preparing outreach for manual review. The portfolio, demos, and promotional reel are separate deliverables.
 
