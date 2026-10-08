@@ -2,7 +2,7 @@
 
 A local toolkit for finding consulting clients and engineering roles, qualifying opportunities, and preparing outreach for manual review. The portfolio, demos, and promotional reel are separate deliverables.
 
-The next four architecture improvements are scoped in [the execution plan](docs/ARCHITECTURE_EXECUTION_PLAN.md), including implementation order, regression cases and continuation context for another agent.
+Every stage is local and reviewable. Collectors save raw candidates before any model scoring, failures stay retryable instead of being dropped, and SMTP checks only report `valid` on conclusive evidence. Buyer prospects need an explicit review decision before drafting, and companies without a verified inbox go to a separate held queue with no recipient. Nothing is ever sent or posted automatically.
 
 ## Setup
 
