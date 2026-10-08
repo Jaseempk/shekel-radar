@@ -1,0 +1,7 @@
+flowchart LR
+    A["Company is hiring<br/>for manual data work"] --> B["Find its website<br/>and public email"]
+    B --> C["Check the email<br/>really exists"]
+    C --> D{"You decide:<br/>worth contacting?"}
+    D -->|"Yes, email confirmed"| E["Ready-to-send<br/>email draft"]
+    D -->|"Yes, email unconfirmed"| F["Draft for their<br/>contact form or LinkedIn"]
+    D -->|"No, or not yet"| G["Kept on file"]

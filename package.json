@@ -8,6 +8,7 @@
     "radar:x": "node x-radar/radar.mjs",
     "radar:facebook": "node fb-radar/radar.mjs",
     "jobs": "node ats-radar/poll.mjs",
-    "buyers": "node buyer-signals/workable.mjs"
+    "buyers": "node buyer-signals/workable.mjs",
+    "diagrams": "bash tools/render-diagrams.sh"
   }
 }

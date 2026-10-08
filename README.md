@@ -8,15 +8,10 @@ Every stage is local and reviewable. Collectors save raw candidates before any m
 
 Shekel Radar does the searching and sorting so you can spend your time on the conversations worth having. It works in four steps, and **you stay in control of the last two**.
 
-```mermaid
-flowchart LR
-    F["<b>1. Find</b><br/><br/>People asking for help<br/>on X, Facebook and Reddit<br/><br/>Companies hiring for<br/>repetitive work<br/><br/>Remote engineering jobs"]
-    S["<b>2. Sort</b><br/><br/>Score every lead<br/>and explain why<br/><br/>Drop sellers, spam,<br/>old and duplicate posts"]
-    R["<b>3. You review</b><br/><br/>Daily lead lists<br/><br/>Ranked job shortlist<br/><br/>Draft emails and replies"]
-    A["<b>4. You act</b><br/><br/>Reply, apply or send,<br/>always by hand"]
-
-    F --> S --> R --> A
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/overview-dark.png">
+  <img alt="Four steps: find leads, sort them, you review, you act by hand" src="docs/diagrams/overview-light.png">
+</picture>
 
 - **Find:** it checks social posts, job boards and Reddit for people and companies with work you could automate, plus remote jobs you could apply for.
 - **Sort:** it scores each lead, explains the score in one line, and filters out the noise.
@@ -27,19 +22,16 @@ flowchart LR
 
 When a company is hiring someone to do repetitive work by hand, that's a sign they might want it automated. Here's how Shekel Radar turns that signal into an email you can send:
 
-```mermaid
-flowchart LR
-    A["Company is hiring<br/>for manual data work"] --> B["Find its website<br/>and public email"]
-    B --> C["Check the email<br/>really exists"]
-    C --> D{"You decide:<br/>worth contacting?"}
-    D -->|"Yes, email confirmed"| E["Ready-to-send<br/>email draft"]
-    D -->|"Yes, email unconfirmed"| F["Draft for their<br/>contact form or LinkedIn"]
-    D -->|"No, or not yet"| G["Kept on file"]
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/outreach-dark.png">
+  <img alt="From a company hiring for manual work to a reviewed email draft" src="docs/diagrams/outreach-light.png">
+</picture>
 
 - It only treats an email as confirmed when the company's mail server clearly says that address exists. If it's unsure, the draft waits for a contact form or LinkedIn instead.
 - Nothing gets drafted until you've said yes to that company.
 - If you edit a draft, your edits are kept.
+
+The diagram sources are in `docs/diagrams/*.mmd`. After editing one, run `npm run diagrams` to re-render the images.
 
 ## Setup
 
