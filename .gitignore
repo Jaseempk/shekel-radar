@@ -47,5 +47,4 @@ ats-radar/ds_*.json
 /email-finder/job-prospects.json
 # Internal planning notes and personal case studies stay local
 /docs/ARCHITECTURE_EXECUTION_PLAN.md
-/a previous project-os-case-study.md
-/case-study-1.md
+/*case-study*.md
