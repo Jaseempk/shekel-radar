@@ -52,7 +52,7 @@ JUNK = ("example.", "sentry", "wixpress", "your@", "email@", "name@", "@2x", ".p
 SMTP_ENV = ("INCOME_SMTP_MAIL_FROM", "INCOME_SMTP_HELO")
 HOSTNAME_RE = re.compile(r"(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+")
 CSV_FIELDS = ["company", "domain", "email", "source", "source_url", "smtp", "founder",
-              "smtp_reason", "checked_at", "mx_status"]
+              "smtp_reason", "checked_at", "mx_status", "site_status", "site_errors"]
 
 
 class ConfigError(ValueError):
@@ -89,15 +89,37 @@ def utc_now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def fetch(url, timeout=12):
+@dataclass(frozen=True)
+class Page:
+    """status: ok | not-text (fetched, no readable text) | missing (404/410)
+    | http-error (other HTTP failure) | error (network/TLS/timeout)
+    | skipped (not attempted: discovery budget exhausted)."""
+    url: str
+    status: str
+    text: str = ""
+    reason: str = ""
+
+
+def fetch_page(url, timeout=12, opener=None, limit=800_000):
+    """Fetch one page, keeping failure evidence instead of collapsing it to ''."""
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            if "text" not in (r.headers.get("Content-Type") or "text"):
-                return ""
-            return r.read(800_000).decode("utf-8", "ignore")
-    except Exception:
-        return ""
+        with (opener or urllib.request.urlopen)(req, timeout=timeout) as r:
+            content_type = r.headers.get("Content-Type") or "text"
+            if "text" not in content_type:
+                return Page(url, "not-text", reason=content_type[:80])
+            return Page(url, "ok", r.read(limit).decode("utf-8", "ignore"))
+    except urllib.error.HTTPError as e:
+        return Page(url, "missing" if e.code in (404, 410) else "http-error", reason=f"HTTP {e.code}")
+    except Exception as e:
+        detail = getattr(e, "reason", None) or e
+        return Page(url, "error", reason=f"{type(e).__name__}: {detail}"[:160])
+
+
+def fetch(url, timeout=12):
+    """Compatibility helper: page text, or '' when unavailable or not text."""
+    page = fetch_page(url, timeout)
+    return page.text if page.status == "ok" else ""
 
 
 def published_emails(html):
@@ -116,20 +138,68 @@ def published_emails(html):
             if not any(j in email.lower() for j in JUNK)}
 
 
-def scrape_site(domain):
-    found = {}
+@dataclass(frozen=True)
+class SiteReport:
+    """status: ok | partial | unavailable | not-found; failures: [(url, reason)]."""
+    status: str
+    fetched: int
+    failures: tuple
+
+    def summary(self, limit=5):
+        parts = [f"{url} {reason}" for url, reason in self.failures[:limit]]
+        if len(self.failures) > limit:
+            parts.append(f"(+{len(self.failures) - limit} more)")
+        return "; ".join(parts)[:600]
+
+
+def scrape_site(domain, fetcher=None, sleep=time.sleep, clock=time.monotonic, budget=90.0, timeout=12,
+                max_host_failures=2):
+    """Published addresses on the company's own pages.
+
+    -> (on_domain {email: source_url}, off_domain {email: source_url}, SiteReport).
+    A host variant that keeps failing at the network level is skipped, and the
+    whole discovery shares one monotonic budget. Missing pages (404) are not
+    failures; unreachable or erroring pages are recorded as diagnostics."""
+    fetcher = fetcher or fetch_page
+    started = clock()
+    variants = (f"https://{domain}", f"https://www.{domain}")
+    host_failures = dict.fromkeys(variants, 0)
+    found, failures, fetched = {}, [], 0
     for path in PAGES:
-        for scheme_host in (f"https://{domain}", f"https://www.{domain}"):
+        remaining = budget - (clock() - started)
+        live = [h for h in variants if host_failures[h] < max_host_failures]
+        if remaining <= 0 or not live:
+            why = "discovery budget exhausted" if remaining <= 0 else "site unreachable (host variants failing)"
+            failures.append((f"https://{domain}/{path}", f"skipped: {why}"))
+            continue
+        attempts = []
+        for scheme_host in live:
             source_url = f"{scheme_host}/{path}"
-            html = fetch(source_url)
-            if not html:
-                continue
-            for email in published_emails(html):
-                found.setdefault(email, source_url)
-            break  # first host variant that answered is enough for this path
-        time.sleep(0.3)
+            remaining = budget - (clock() - started)
+            if remaining <= 0:
+                attempts.append(Page(source_url, "skipped", reason="discovery budget exhausted"))
+                break
+            page = fetcher(source_url, timeout=min(timeout, remaining))
+            if page.status in ("ok", "not-text"):
+                host_failures[scheme_host] = 0
+                fetched += 1
+                for email in published_emails(page.text):
+                    found.setdefault(email, source_url)
+                attempts = []
+                break  # first host variant that answered is enough for this path
+            host_failures[scheme_host] = host_failures[scheme_host] + 1 if page.status == "error" else 0
+            attempts.append(page)
+        failures.extend((page.url, f"{page.status}: {page.reason}") for page in attempts if page.status != "missing")
+        sleep(0.3)
+    if failures and not fetched:
+        status = "unavailable"
+    elif failures:
+        status = "partial"
+    else:
+        status = "ok" if fetched else "not-found"
     on_domain = {e: source for e, source in found.items() if e.split("@")[1].removeprefix("www.") == domain}
-    return on_domain, {e: source for e, source in found.items() if e not in on_domain}
+    report = SiteReport(status, fetched, tuple(failures))
+    return on_domain, {e: source for e, source in found.items() if e not in on_domain}, report
 
 
 def pattern_candidates(founder, domain):
@@ -462,7 +532,10 @@ def main(argv=None, *, env=None, verifier_factory=None, sleep=time.sleep):
         dom, company, founder = p["domain"], p["company"], p.get("founder")
         print(f"[{i}/{len(prospects)}] {company} ({dom})", flush=True)
 
-        scraped_own, scraped_other = scrape_site(dom)
+        scraped_own, scraped_other, site = scrape_site(dom, sleep=sleep)
+        if site.status not in ("ok", "not-found"):
+            print(f"    website evidence {site.status}: {site.summary(2)}", flush=True)
+        site_columns = {"site_status": site.status, "site_errors": site.summary()}
         candidates = []  # (email, source) in priority order
         for e in sorted(scraped_own):
             candidates.append((e, "scraped"))
@@ -485,7 +558,7 @@ def main(argv=None, *, env=None, verifier_factory=None, sleep=time.sleep):
                 rows.append({"company": company, "domain": dom, "email": email,
                              "source": source, "source_url": scraped_own.get(email, ''), "smtp": verdict.smtp,
                              "founder": " ".join(founder) if founder else "", "smtp_reason": verdict.reason,
-                             "checked_at": verdict.checked_at, "mx_status": ver.mx.status})
+                             "checked_at": verdict.checked_at, "mx_status": ver.mx.status, **site_columns})
                 if verdict.smtp == "valid":
                     found_valid += 1
                 print(f"    {email:<45} {source:<8} {verdict.smtp:<8} {verdict.reason[:70]}", flush=True)
@@ -496,7 +569,7 @@ def main(argv=None, *, env=None, verifier_factory=None, sleep=time.sleep):
         for e in sorted(scraped_other):
             rows.append({"company": company, "domain": dom, "email": e, "source": "scraped-offsite",
                          "source_url": scraped_other[e], "smtp": "", "founder": "", "smtp_reason": "",
-                         "checked_at": "", "mx_status": ""})
+                         "checked_at": "", "mx_status": "", **site_columns})
         sleep(1.0)
 
     order = {"valid": 0, "catchall": 1, "unknown": 2, "": 3, "invalid": 4}

@@ -328,13 +328,15 @@ class FinderCommandTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             prospects, out = self.write_prospects(Path(temp)), Path(temp) / 'out.csv'
             scraped = ({'sales@company.test': 'https://company.test/contact'}, {'partner@external.test': 'https://company.test/contact'})
-            with patch.object(finder, 'scrape_site', return_value=scraped), patch('builtins.print'):
+            site = finder.SiteReport('partial', 1, (('https://company.test/team', 'error: TimeoutError: timed out'),))
+            with patch.object(finder, 'scrape_site', return_value=(*scraped, site)), patch('builtins.print'):
                 finder.main(['--prospects', str(prospects), '--out', str(out)], env=env,
                             verifier_factory=lambda d: verifier(net), sleep=lambda s: None)
             rows = list(csv.DictReader(io.StringIO(out.read_text())))
         self.assertEqual(list(rows[0])[:7], ['company', 'domain', 'email', 'source', 'source_url', 'smtp', 'founder'])
-        for column in ('smtp_reason', 'checked_at', 'mx_status'):
-            self.assertIn(column, rows[0])
+        self.assertEqual(list(rows[0])[7:], ['smtp_reason', 'checked_at', 'mx_status', 'site_status', 'site_errors'])
+        self.assertEqual({r['site_status'] for r in rows}, {'partial'})
+        self.assertIn('TimeoutError', rows[0]['site_errors'])
         own = [r for r in rows if r['source'] != 'scraped-offsite']
         self.assertEqual({r['smtp'] for r in own}, {'catchall'})
         self.assertTrue(all(r['smtp_reason'].startswith('control-accepted:') and r['checked_at'] for r in own))

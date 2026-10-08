@@ -102,6 +102,7 @@ python3 tools/run.py outreach prepare \
   --run state/buyer-runs/my-run
 
 # Scrape candidate emails and perform DNS/SMTP verification (no email sent).
+# Requires INCOME_SMTP_MAIL_FROM and INCOME_SMTP_HELO in .env (see below).
 python3 tools/run.py outreach verify --run state/buyer-runs/my-run
 
 # Generate offline template drafts using verified contacts.
@@ -117,6 +118,25 @@ python3 tools/run.py outreach run \
 ```
 
 Contact CSV required columns: `company,domain,email,source,smtp`. Discovery also records `source_url` for published addresses (including Cloudflare's public email display encoding), and carries it into drafts for review. Only `smtp=valid` records matching both the company name and the evidenced company domain enter the draft queue. SMTP acceptance is evidence from the probe, not a guarantee of deliverability or mailbox ownership.
+
+Network verification needs a probe identity you control. It refuses to start, before any network request, until both are set in the root `.env` or the environment:
+
+```sh
+INCOME_SMTP_MAIL_FROM=probe@your-domain.example   # SMTP envelope sender (MAIL FROM)
+INCOME_SMTP_HELO=mail.your-domain.example         # EHLO/HELO hostname
+```
+
+Verification is conservative. Every SMTP session first offers a random address on the domain:
+
+| `smtp` | Meaning |
+|---|---|
+| `valid` | The same session explicitly rejected the random address as a nonexistent recipient (e.g. `550 5.1.1`) and accepted the candidate. |
+| `invalid` | The candidate was explicitly rejected as a nonexistent recipient. |
+| `catchall` | The random address was accepted, so acceptance proves nothing. |
+| `unknown` | Evidence was inconclusive: no/failed MX lookup, connection failure, policy block, temporary (4xx) or ambiguous 5xx replies, a random-address probe that was not explicitly rejected, or the domain's time budget/circuit breaker ran out. |
+| empty | Off-domain address found on the site (`source=scraped-offsite`); not probed. |
+
+Generated CSVs append diagnostic columns after the original ones: `smtp_reason` (`token: detail`, e.g. `control-inconclusive: …`, `target-policy: 550 5.7.1 …`, `circuit-open: …`), `checked_at` (UTC), `mx_status` (`ok`, `none`, `error`), `site_status` (`ok`, `partial`, `unavailable`, `not-found`) and `site_errors` (failed page URLs with reasons). A reconnect re-runs the random-address probe before trusting any reply, every SMTP connection is closed, and each domain is limited to a 45-second monotonic budget, four connection attempts and three transport failures, after which remaining candidates are `unknown` with the reason. Website discovery separately records unreachable pages instead of treating them as pages without email, and stops trying a host variant after repeated network failures. Imported contact CSVs only need the required columns.
 
 Company domains come from the source-provided website or a reviewed `--domains FILE` mapping. A domain responding to a guessed name is never sufficient. Missing domains are recorded in `unresolved.json`. Mapping format:
 
