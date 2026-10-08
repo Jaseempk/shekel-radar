@@ -1,8 +1,19 @@
 # Outreach Scripts
 
-All tuned to: **niche = B2B agencies**, **offer B = lead-enrichment + AI-scoring pipeline**. Swap `{Name}`, `{Agency}`, `{trigger}` per prospect. Keep everything short — the goal of every first message is a *reply*, not a sale.
+All tuned to: **niche = B2B agencies**, **offer B = lead-enrichment + AI-scoring pipeline**. Swap `{Name}`, `{Agency}`, `{trigger}` per prospect and `{proof}` once (see below). Keep everything short — the goal of every first message is a *reply*, not a sale.
 
 Replace before using: `REPLACE_CALENDLY` (your Cal.com link), `REPLACE_LOOM` (Loom URL), `https://jaseem.co` (your site URL).
+
+### Writing your `{proof}` line
+
+Every script below uses one `{proof}` sentence. Write it once, from your own work:
+
+- **Pattern:** what you automated, for what kind of team, and what changed. For example: "I recently automated {workflow} for a {size} {industry} team, and {result}."
+- **Describe the client by type and size**, never by name, unless you have their permission.
+- **Use only numbers you can back up.** If you never measured the result, describe the outcome instead of inventing hours or percentages.
+- **Example with a measured result:** "I recently automated weekly prospect-list building for a 20-person recruiting agency; it went from a day of manual work to a 30-minute review."
+- **Example without metrics:** "I recently built the same pipeline for a small B2B services team; they now start each morning with a ranked lead list instead of building it by hand."
+- **Short form** for community replies and proposals: "just set one up for a small agency's prospecting".
 
 ---
 
