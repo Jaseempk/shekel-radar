@@ -95,7 +95,7 @@ def draft_stage(run, personal=False):
     lines = ['# Outreach drafts', '', 'Review each draft and its evidence before sending manually.', '']
     for d in drafts:
         lines.extend([f"## {d['company']}", f"To: {d['to']}", f"Subject: {d['subject']}", f"Signal: {d['signal_url']}",
-                      f"Company evidence: {d['domain_source']}", '', d['body'], '', '---', ''])
+                      f"Company evidence: {d['domain_source']}", f"Contact evidence: {d.get('contact_source_url') or 'No published URL recorded; review contact CSV'}", '', d['body'], '', '---', ''])
     atomic_write(run / 'send-queue.md', '\n'.join(lines))
     print(f'{len(drafts)} drafts; {len(prospects)-len(targets)} companies without eligible contacts; {len(failures)} retryable errors -> {run / "send-queue.md"}')
     if failures:

@@ -113,7 +113,7 @@ python3 tools/run.py outreach run \
   --run state/buyer-runs/my-run
 ```
 
-Contact CSV columns: `company,domain,email,source,smtp`. Only `smtp=valid` records matching both the company name and the evidenced company domain enter the draft queue. SMTP acceptance is evidence from the probe, not a guarantee of deliverability or mailbox ownership.
+Contact CSV required columns: `company,domain,email,source,smtp`. Discovery also records `source_url` for published addresses (including Cloudflare's public email display encoding), and carries it into drafts for review. Only `smtp=valid` records matching both the company name and the evidenced company domain enter the draft queue. SMTP acceptance is evidence from the probe, not a guarantee of deliverability or mailbox ownership.
 
 Company domains come from the source-provided website or a reviewed `--domains FILE` mapping. A domain responding to a guessed name is never sufficient. Missing domains are recorded in `unresolved.json`. Mapping format:
 

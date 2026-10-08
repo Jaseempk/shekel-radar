@@ -83,7 +83,8 @@ def select_contacts(prospects, contacts):
             candidates.append(c)
         candidates.sort(key=lambda c: preference.index(c['email'].split('@')[0]) if c['email'].split('@')[0] in preference else len(preference))
         if candidates:
-            chosen.append({**p, 'to': candidates[0]['email'], 'contact_source': candidates[0].get('source', ''), 'smtp': candidates[0]['smtp']})
+            chosen.append({**p, 'to': candidates[0]['email'], 'contact_source': candidates[0].get('source', ''),
+                           'contact_source_url': candidates[0].get('source_url', ''), 'smtp': candidates[0]['smtp']})
     return chosen
 
 
@@ -96,7 +97,8 @@ def draft_template(prospect):
             "Would a 90-second screen recording of how I'd approach your workflow be useful?\n\n"
             f"{profile['name']}\n{profile['website']}")
     return {'company': prospect['company'], 'to': prospect['to'], 'subject': f"your {role['title'].lower()} opening", 'body': body,
-            'offer': offer, 'signal_url': role['url'], 'domain_source': prospect['domain_source'], 'status': 'draft'}
+            'offer': offer, 'signal_url': role['url'], 'domain_source': prospect['domain_source'],
+            'contact_source_url': prospect.get('contact_source_url', ''), 'status': 'draft'}
 
 
 def personalize(prospect, website_text):

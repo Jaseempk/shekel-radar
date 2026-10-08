@@ -35,6 +35,7 @@ import sys
 import time
 import urllib.request
 import urllib.error
+from html import unescape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PAGES = ["", "contact", "contact-us", "about", "about-us", "team", "privacy-policy", "privacy", "terms"]
@@ -57,22 +58,36 @@ def fetch(url, timeout=12):
         return ""
 
 
+def published_emails(html):
+    """Read plain text, mailto and Cloudflare's public email display encoding."""
+    # Embedded JSON can encode markup delimiters; otherwise "\\u003esales@"
+    # incorrectly becomes the candidate "u003esales@".
+    text = re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m[1], 16)), html)
+    text = unescape(text)
+    for encoded in re.findall(r'data-cfemail=[\"\']([a-fA-F0-9]+)[\"\']', text):
+        try:
+            raw = bytes.fromhex(encoded)
+            text += ' ' + bytes(c ^ raw[0] for c in raw[1:]).decode('utf-8')
+        except (ValueError, UnicodeDecodeError):
+            continue
+    return {email.lower().rstrip('.') for email in EMAIL_RE.findall(text)
+            if not any(j in email.lower() for j in JUNK)}
+
+
 def scrape_site(domain):
-    found = set()
+    found = {}
     for path in PAGES:
         for scheme_host in (f"https://{domain}", f"https://www.{domain}"):
-            html = fetch(f"{scheme_host}/{path}")
+            source_url = f"{scheme_host}/{path}"
+            html = fetch(source_url)
             if not html:
                 continue
-            for m in EMAIL_RE.findall(html):
-                m = m.lower().rstrip(".")
-                if any(j in m for j in JUNK):
-                    continue
-                found.add(m)
+            for email in published_emails(html):
+                found.setdefault(email, source_url)
             break  # first host variant that answered is enough for this path
         time.sleep(0.3)
-    on_domain = {e for e in found if e.split("@")[1].removeprefix("www.") in (domain, "www." + domain)}
-    return on_domain, found - on_domain
+    on_domain = {e: source for e, source in found.items() if e.split("@")[1].removeprefix("www.") == domain}
+    return on_domain, {e: source for e, source in found.items() if e not in on_domain}
 
 
 def pattern_candidates(founder, domain):
@@ -197,7 +212,7 @@ def main(argv=None):
                 break  # two verified non-scraped hits per company is plenty
             status = ver.check(email)
             rows.append({"company": company, "domain": dom, "email": email,
-                         "source": source, "smtp": status,
+                         "source": source, "source_url": scraped_own.get(email, ''), "smtp": status,
                          "founder": " ".join(founder) if founder else ""})
             if status == "valid":
                 found_valid += 1
@@ -205,14 +220,14 @@ def main(argv=None):
             time.sleep(0.8)
         for e in sorted(scraped_other):
             rows.append({"company": company, "domain": dom, "email": e,
-                         "source": "scraped-offsite", "smtp": "", "founder": ""})
+                         "source": "scraped-offsite", "source_url": scraped_other[e], "smtp": "", "founder": ""})
         ver.close()
         time.sleep(1.0)
 
     order = {"valid": 0, "catchall": 1, "unknown": 2, "": 3, "invalid": 4}
     rows.sort(key=lambda r: (r["company"], order.get(r["smtp"], 5)))
     with io.StringIO(newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["company", "domain", "email", "source", "smtp", "founder"])
+        w = csv.DictWriter(f, fieldnames=["company", "domain", "email", "source", "source_url", "smtp", "founder"])
         w.writeheader()
         w.writerows(rows)
         atomic_write(args.out, f.getvalue())

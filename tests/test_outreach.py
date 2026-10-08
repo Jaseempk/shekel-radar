@@ -48,13 +48,14 @@ class OutreachTests(unittest.TestCase):
             base = Path(temp); signals = base/'signals.json'; contacts = base/'contacts.csv'; run = base/'run'
             signals.write_text(json.dumps([self.signal()]))
             with contacts.open('w', newline='') as out:
-                writer = csv.DictWriter(out, fieldnames=['company','domain','email','source','smtp'])
-                writer.writeheader(); writer.writerow({'company':'Example Studio','domain':'example.com','email':'hello@example.com','source':'scraped','smtp':'valid'})
+                writer = csv.DictWriter(out, fieldnames=['company','domain','email','source','source_url','smtp'])
+                writer.writeheader(); writer.writerow({'company':'Example Studio','domain':'example.com','email':'hello@example.com','source':'scraped','source_url':'https://example.com/contact','smtp':'valid'})
             command = [sys.executable, str(ROOT/'buyer-signals/workflow.py')]
             result = subprocess.run(command+['run','--signals',str(signals),'--contacts',str(contacts),'--run',str(run)],cwd=temp,capture_output=True,text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads((run/'drafts.json').read_text())[0]['offer'], 'B')
             old = (run/'send-queue.md').read_text()
+            self.assertIn('Contact evidence: https://example.com/contact', old)
             result = subprocess.run(command+['draft','--run',str(run)],cwd=temp,capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stderr)
             self.assertEqual((run/'send-queue.md').read_text(),old)
