@@ -107,7 +107,11 @@ test('workable CLI writes freshness evidence offline and exits nonzero on search
   assert.deepEqual(evidence.excluded.map(r => r.sourceId), ['Old1']);
   assert.equal(status.excludedStale, 1);
   assert.deepEqual(status.errors, []);
-  assert.deepEqual(companies.map(c => [c.company, c.website, c.freshness, c.roles[0].sourceId]), [['Acme', 'acme.example', 'fresh', 'Fresh1']]);
+  // Without description evidence nothing qualifies; the fresh job waits for review.
+  assert.deepEqual(companies, []);
+  const review = JSON.parse(fs.readFileSync(snapshot.replace(/\.json$/, '.review.json'), 'utf8'));
+  assert.deepEqual(review.map(c => [c.company, c.website, c.freshness, c.roles[0].sourceId, c.qualification.status]), [['Acme', 'acme.example', 'fresh', 'Fresh1', 'not-fetched']]);
+  assert.equal(fs.readFileSync(path.join(dir, 'stub.json.log'), 'utf8').trim().split('\n').length, 1, 'only the search request ran');
 
   const failed = run({}, '--query', 'data entry', '--pages', '1', '--no-descriptions');
   assert.equal(failed.status, 1);
