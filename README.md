@@ -10,21 +10,12 @@ Shekel Radar does the searching and sorting so you can spend your time on the co
 
 ```mermaid
 flowchart LR
-    F["<b>🔎  1 · Find</b><br/><br/>💬 People asking for help<br/>on X, Facebook and Reddit<br/><br/>🏢 Companies hiring for<br/>repetitive work<br/><br/>💼 Remote engineering jobs"]
-    S["<b>🧠  2 · Sort</b><br/><br/>⭐ Score every lead<br/>and explain why<br/><br/>🧹 Drop sellers, spam,<br/>old and duplicate posts"]
-    R["<b>👀  3 · You review</b><br/><br/>📋 Daily lead lists<br/><br/>🏆 Ranked job shortlist<br/><br/>✍️ Draft emails and replies"]
-    A["<b>🤝  4 · You act</b><br/><br/>Reply, apply or send<br/><br/><b>Always by hand</b>"]
+    F["<b>1. Find</b><br/><br/>People asking for help<br/>on X, Facebook and Reddit<br/><br/>Companies hiring for<br/>repetitive work<br/><br/>Remote engineering jobs"]
+    S["<b>2. Sort</b><br/><br/>Score every lead<br/>and explain why<br/><br/>Drop sellers, spam,<br/>old and duplicate posts"]
+    R["<b>3. You review</b><br/><br/>Daily lead lists<br/><br/>Ranked job shortlist<br/><br/>Draft emails and replies"]
+    A["<b>4. You act</b><br/><br/>Reply, apply or send,<br/>always by hand"]
 
-    F ==> S ==> R ==> A
-
-    classDef find fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a8a
-    classDef sort fill:#ede9fe,stroke:#8b5cf6,stroke-width:2px,color:#4c1d95
-    classDef review fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
-    classDef act fill:#dcfce7,stroke:#22c55e,stroke-width:2px,color:#14532d
-    class F find
-    class S sort
-    class R review
-    class A act
+    F --> S --> R --> A
 ```
 
 - **Find:** it checks social posts, job boards and Reddit for people and companies with work you could automate, plus remote jobs you could apply for.
@@ -38,23 +29,12 @@ When a company is hiring someone to do repetitive work by hand, that's a sign th
 
 ```mermaid
 flowchart LR
-    A["🏢 A company is hiring<br/>for manual data work"] --> B["🌐 Find its website<br/>and public email"]
-    B --> C["✅ Check the email<br/>really exists"]
-    C --> D{"👀 You decide:<br/>worth contacting?"}
-    D -->|"Yes, email confirmed"| E["📨 Ready-to-send<br/>email draft"]
-    D -->|"Yes, email unconfirmed"| F["📝 Draft for their<br/>contact form or LinkedIn"]
-    D -->|"No, or not yet"| G["🗂️ Kept on file"]
-
-    classDef step fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a8a
-    classDef decide fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
-    classDef good fill:#dcfce7,stroke:#22c55e,stroke-width:2px,color:#14532d
-    classDef hold fill:#ede9fe,stroke:#8b5cf6,stroke-width:2px,color:#4c1d95
-    classDef rest fill:#f1f5f9,stroke:#94a3b8,stroke-width:2px,color:#334155
-    class A,B,C step
-    class D decide
-    class E good
-    class F hold
-    class G rest
+    A["Company is hiring<br/>for manual data work"] --> B["Find its website<br/>and public email"]
+    B --> C["Check the email<br/>really exists"]
+    C --> D{"You decide:<br/>worth contacting?"}
+    D -->|"Yes, email confirmed"| E["Ready-to-send<br/>email draft"]
+    D -->|"Yes, email unconfirmed"| F["Draft for their<br/>contact form or LinkedIn"]
+    D -->|"No, or not yet"| G["Kept on file"]
 ```
 
 - It only treats an email as confirmed when the company's mail server clearly says that address exists. If it's unsure, the draft waits for a contact form or LinkedIn instead.
