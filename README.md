@@ -2,6 +2,8 @@
 
 A local toolkit for finding consulting clients and engineering roles, qualifying opportunities, and preparing outreach for manual review. The portfolio, demos, and promotional reel are separate deliverables.
 
+The next four architecture improvements are scoped in [the execution plan](docs/ARCHITECTURE_EXECUTION_PLAN.md), including implementation order, regression cases and continuation context for another agent.
+
 ## Setup
 
 - Node **22.22 or newer**. The collectors use built-in `fetch`, WebSocket and SQLite; Node 22 prints an experimental SQLite warning.
