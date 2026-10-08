@@ -10,35 +10,53 @@ The next four architecture improvements are scoped in [the execution plan](docs/
 - Python **3.12 or newer**.
 - Browser collection requires a logged-in Chrome/Brave session with a debugging port. Only run those commands when you want to collect live results.
 
+A fresh clone runs help and the offline tests with no configuration, credentials, local assets or third-party packages:
+
 ```sh
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.lock.txt
-cp .env.example .env
-# Set ANTHROPIC_API_KEY in .env for model scoring/personalization.
 python3 tools/run.py --help
 npm test
 ```
 
-`requirements.txt` specifies the supported direct dependency range; `requirements.lock.txt` pins the installed dependency closure verified on macOS with Python 3.12. The root Node package has no third-party dependencies. The Remotion reel has its own package and lockfile.
+For live features, install the locked Python dependencies and add local configuration:
 
-The actual environment overrides root `.env`. The old `reddit-mining/.env` remains a fallback for the model key. Model names, thresholds, candidate location, retention limits and approved drafting facts live in `config/settings.json`. The location remains Kazakhstan (UTC+5), preserving the previous search configuration; edit it when appropriate. Model availability depends on your provider account.
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.lock.txt
+cp .env.example .env                                              # ANTHROPIC_API_KEY, optional INCOME_* settings
+cp config/settings.local.example.json config/settings.local.json  # sender facts, location
+```
 
-All commands work from another directory when invoked by absolute path. User-supplied input paths are relative to the calling directory. Set `INCOME_DATA_DIR` to relocate runtime data; by default it is this project.
+`requirements.txt` specifies the supported direct dependency range; `requirements.lock.txt` pins the dependency closure (verified on macOS with Python 3.12; CI installs it on Linux). Only model calls need it: `anthropic` is imported lazily. The root Node package has no third-party dependencies. The Remotion reel has its own package and lockfile.
+
+## Configuration
+
+Settings resolve in this order, later layers winning. `lib/runtime.py` and `lib/runtime.mjs` implement the same merge, validation and error messages, and tests check that they agree.
+
+1. `config/settings.json`: committed, generic defaults (model names, the buyer score threshold, retention limits, a neutral `candidateLocation` and a default `claimsRule`). It contains no personal facts.
+2. `config/settings.local.json`: your ignored override. Objects merge key by key (so a partial `profile` keeps the default `claimsRule`); other values replace. Set `INCOME_SETTINGS_LOCAL=/path/file.json` to use another file, which must then exist.
+3. Environment variables `INCOME_SOCIAL_MODEL` and `INCOME_DRAFT_MODEL`, when non-empty, override the models.
+
+The actual environment overrides root `.env`. The old `reddit-mining/.env` remains a fallback for the model key. Other supported variables are `INCOME_DATA_DIR` (relocate runtime data; by default this project), `INCOME_CDP_URL` (browser debugging endpoint), `NICHE_RADAR` (Reddit scraper checkout), and `INCOME_SMTP_MAIL_FROM` / `INCOME_SMTP_HELO`, your own envelope sender and HELO name for `outreach verify` SMTP probes.
+
+General settings are type-checked on load; an invalid override fails with the setting name. Sender facts (`profile.name`, `profile.website`, `profile.proof` and `profile.claimsRule`) are checked only by commands that draft, through `require_profile()` / `requireProfile()`, which stop with a message naming each missing fact instead of inventing one. Help, collection, export-only rebuilds and tests run without them. `candidateLocation` is interpolated into job-scoring prompts, so set your real location locally. Model availability depends on your provider account and is only exercised by live model features.
+
+All commands work from another directory when invoked by absolute path. User-supplied input paths are relative to the calling directory.
 
 ## Where things live
 
 | Location | Purpose |
 |---|---|
 | `lib/` | Shared qualification state, model validation, browser transport, ATS adapters, buyer rules, contact matching and drafting |
-| `config/` and source-specific search JSON files | Retained settings and search definitions |
+| `config/` and source-specific search JSON files | Committed default settings, the local override example, and search definitions |
 | `state/opportunities.sqlite` | Durable social/Reddit outcomes, retryable work, current ATS observations and notification history |
 | `state/buyer-runs/` | Buyer workflow inputs, company evidence, contact verification and resumable drafts |
 | `state/facebook-groups.json` | Discovered group registry |
 | `data/raw/` | Disposable scraped captures |
 | `exports/` | Rebuildable queues and collection snapshots |
 | `tests/` | Offline failure, recovery, adapter, workflow and command tests |
-| `site/` | Local portfolio website (ignored by Git) |
+| `site/`, `resume/` | Local portfolio website and resume (ignored by Git) |
+| `.github/workflows/ci.yml` | Offline CI: help and `npm test` on push and pull request |
 | `reel/`, `demos/` | Promotional reel and demonstration assets |
 
 Credentials, databases, caches, generated data, dependencies and downloaded ATS directories are excluded from Git. Reusable source lists remain in their current folders. Existing `seen*.json` files are imported on first use and retained locally. Those historical IDs suppress rediscovery; deleting old queues does not recreate their deleted content.
@@ -135,7 +153,7 @@ The old `wire-outreach.py`, `personalise.py` and `wk_personalise.py` commands ar
 
 ## Reddit
 
-The raw scraper lives in the separate `niche-radar` checkout. Set `NICHE_RADAR` if it is not at the existing sibling location. Its own Python dependencies must be installed. The wrapper defaults to 30 days of posts and uses portable date calculations.
+The raw scraper lives in the separate `niche-radar` checkout, which is not part of this repository and is needed only for `scrape.sh`. Set `NICHE_RADAR` to a checkout containing `sources/reddit.py` (the built-in fallback is the owner's local layout). Its own Python dependencies must be installed. Ranking, seller checks and drafting work on any previously captured data. The wrapper defaults to 30 days of posts and uses portable date calculations.
 
 ```sh
 bash reddit-mining/scrape.sh
@@ -145,6 +163,8 @@ python3 tools/run.py reddit-draft --limit 150
 python3 tools/run.py reddit-draft --resume
 python3 tools/run.py reddit-draft --export-only
 ```
+
+`reddit-draft` requires the sender profile described in Configuration. Its prompt uses the same `profile.proof` and `profile.claimsRule` as the outreach drafts, and its queue threshold defaults to `minimumBuyerScore` (`--min-score` overrides). `--export-only` needs neither the profile nor a key.
 
 Seller-check failures are saved in `leads.retry.json` and exit nonzero; they are never labelled clean. Retry that file with `reddit-sellers --leads FILE --out NEW_OUTPUT.csv`. Qualification errors stay pending in SQLite and can be retried without rebuilding the lead list. Exports include completed qualified records; review their age before replying. Model rules can evolve independently of already-saved decisions.
 
@@ -161,6 +181,8 @@ Pruning operates only under `data/raw/` and `exports/`. It does not touch source
 
 ## Verification and assets
 
-`npm test` runs Node's built-in test runner and Python's unittest suite. Tests use temporary stores, synthetic records and local process execution; they do not require credentials, a browser, external network access or paid model calls.
+`npm test` runs Node's built-in test runner and Python's unittest suite. Tests use temporary stores, synthetic records, explicit empty settings overrides and local process execution; they do not require credentials, a local profile, a browser, external network access or paid model calls. GitHub Actions (`.github/workflows/ci.yml`) runs `python3 tools/run.py --help` and `npm test` on Node 22 and Python 3.12 for every push and pull request, and separately checks that `requirements.lock.txt` installs on Linux. CI never uses keys, browsers, SMTP or scheduled scraping.
 
-The portfolio remains a static file configured for Cloudflare Pages through `wrangler.toml`. The reel uses its own commands in `reel/package.json`. Case studies and outreach copy still need human factual review before publication; this refactor did not verify the claims in those documents.
+Manual, read-only diagnostic: `node fb-radar/peek.mjs URL...` prints the visible text of Facebook posts or profiles in the logged-in browser, to check who an author is and how contested a post is. It uses the shared browser transport (`fb-radar/cdp.mjs` re-exports `lib/cdp.mjs`).
+
+The portfolio (`site/`) is local-only. `wrangler.toml` is kept as an optional example of the owner's Cloudflare Pages deployment and does nothing without `site/`. The reel uses its own commands in `reel/package.json`. Case studies and outreach copy still need human factual review before publication; this refactor did not verify the claims in those documents.

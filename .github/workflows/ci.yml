@@ -1,0 +1,41 @@
+name: CI
+
+# Offline only: no API keys, browsers, SMTP probes, paid requests or scheduled scraping.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # The tests need no third-party packages, local settings override or .env.
+      - name: Command help
+        run: python3 tools/run.py --help
+      - name: Offline tests
+        env:
+          INCOME_DATA_DIR: ${{ runner.temp }}/income-data
+        run: mkdir -p "$INCOME_DATA_DIR" && npm test
+
+  locked-python-dependencies:
+    # Confirms requirements.lock.txt (recorded on macOS) installs on Linux; makes no provider calls.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m pip install -r requirements.lock.txt
+      - run: python3 -m pip check && python3 -c "import anthropic, dotenv"
