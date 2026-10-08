@@ -35,6 +35,17 @@ class OutreachTests(unittest.TestCase):
         bad.update(email='hello@example.com', smtp='catchall')
         self.assertFalse(select_contacts(prospects, [bad]))
 
+    def test_only_conclusive_valid_contacts_are_eligible(self):
+        prospects, _ = prepare_prospects([self.signal()], {})
+        base = {'company': 'Example Studio', 'domain': 'example.com', 'email': 'hello@example.com', 'source': 'generic',
+                'mx_status': 'ok', 'checked_at': '2026-10-08T00:00:00+00:00'}
+        for smtp, reason in [('catchall', 'control-accepted: random address accepted (250 OK)'),
+                             ('unknown', 'control-inconclusive: target accepted but control was temporary 451'),
+                             ('unknown', 'circuit-open: 3 transport failures'), ('', ''), ('invalid', 'target-nonexistent: 550 5.1.1')]:
+            self.assertFalse(select_contacts(prospects, [{**base, 'smtp': smtp, 'smtp_reason': reason}]), smtp)
+        chosen = select_contacts(prospects, [{**base, 'smtp': 'valid', 'smtp_reason': 'control-rejected+target-accepted: ...'}])
+        self.assertEqual(chosen[0]['to'], 'hello@example.com')
+
     def test_offer_b_routes_to_lead_pipeline_without_invented_metrics(self):
         prospects, _ = prepare_prospects([self.signal()], {})
         draft = draft_template({**prospects[0], 'to': 'hello@example.com'})
