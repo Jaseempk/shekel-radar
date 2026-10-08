@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+# Local sender facts, location and preferences (see config/settings.local.example.json)
+config/settings.local.json
 .wrangler/
 # Personal resume source, documents and generated files stay local
 /resume/
