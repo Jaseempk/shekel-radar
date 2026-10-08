@@ -131,19 +131,24 @@ python3 tools/run.py outreach prepare \
 # Requires INCOME_SMTP_MAIL_FROM and INCOME_SMTP_HELO in .env (see below).
 python3 tools/run.py outreach verify --run state/buyer-runs/my-run
 
-# Generate offline template drafts using verified contacts.
+# Record your review decisions (validated; see "Review decisions" below).
+python3 tools/run.py outreach review --run state/buyer-runs/my-run --decisions /path/review.json
+
+# Generate offline template drafts: send-ready for verified inboxes, held otherwise.
 python3 tools/run.py outreach draft --run state/buyer-runs/my-run
 ```
 
-`outreach run --signals FILE` executes all three stages and prints its generated run directory. To run entirely offline with existing verification results:
+`outreach run --signals FILE` executes prepare, verify, review (when `--decisions FILE` is given) and draft, and prints its generated run directory. To run entirely offline with existing verification results:
 
 ```sh
 python3 tools/run.py outreach run \
   --signals /path/signals.json --contacts /path/emails.csv \
-  --run state/buyer-runs/my-run
+  --decisions /path/review.json --run state/buyer-runs/my-run
 ```
 
-Contact CSV required columns: `company,domain,email,source,smtp`. Discovery also records `source_url` for published addresses (including Cloudflare's public email display encoding), and carries it into drafts for review. Only `smtp=valid` records matching both the company name and the evidenced company domain enter the draft queue. SMTP acceptance is evidence from the probe, not a guarantee of deliverability or mailbox ownership.
+`draft` (and therefore `run`) needs the sender profile described in Configuration and exits with status 2, naming the missing facts, without it. `prepare`, `verify` and `review` do not need it.
+
+Contact CSV required columns: `company,domain,email,source,smtp`. Discovery also records `source_url` for published addresses (including Cloudflare's public email display encoding), and carries it into drafts for review. Only `smtp=valid` records with conclusive evidence (see below) matching both the company name and the evidenced company domain can enter the email queue, and only for accepted prospects. SMTP acceptance is evidence from the probe, not a guarantee of deliverability or mailbox ownership.
 
 Network verification needs a probe identity you control. It refuses to start, before any network request, until both are set in the root `.env` or the environment:
 
@@ -175,9 +180,54 @@ Company domains come from the source-provided website or a reviewed `--domains F
 }
 ```
 
-Inspect `send-queue.md`, `drafts.json` and the source evidence inside the run directory. Optional `--personalise` on `draft` or `run` fetches company websites and calls the model. Successful drafts are checkpointed; errors go to `draft-errors.json` and remain retryable. Templates and model prompts share the same approved profile facts. All sending remains manual.
+### Review decisions
 
-The old `wire-outreach.py`, `personalise.py` and `wk_personalise.py` commands are compatibility entry points for the explicit prepare/draft stages; pass `--help` for the required inputs. They no longer discover today's inputs implicitly.
+Nothing is drafted for a prospect until a person has reviewed it. A review file is a JSON list of decisions (or `{"version": 1, "decisions": [...]}`):
+
+```json
+[
+  {
+    "company": "Example Company",
+    "domain": "example.com",
+    "decision": "accepted",
+    "reason": "Role describes repeated account research and CRM de-duplication.",
+    "reviewed_at": "2026-10-08",
+    "role": {"url": "https://jobs.example.test/123", "title": "Sales Research Specialist"},
+    "offer": "B",
+    "hypothesis": "Research and CRM validation could be assisted; budget and intent are unknown.",
+    "contact_route": {"type": "contact-form", "url": "https://example.com/contact", "note": "Official form; domain is catch-all"}
+  }
+]
+```
+
+- `company` + `domain` must match a prospect in the run exactly (the domain is normalized, e.g. `www.` dropped). Same-name companies on different domains are separate prospects with separate reviews and contacts.
+- `decision` is `accepted`, `rejected` or `deferred`; `reason` and an ISO 8601 `reviewed_at` are always required; `role` is the selected source role URL (or `{url, title}`) and must be one of that prospect's roles.
+- `accepted` also needs `offer` (`A`, `B` or `ops`) and `hypothesis`. Optional `contact_route` (accepted only) records a reviewed alternative: `contact-form`, `linkedin` or `other` with a `url`, or `unverified-email` with the proposed `email`. A route only shapes the held draft; it never becomes a recipient. Unknown fields are rejected.
+
+The whole file is validated before anything in the run changes. Applied decisions are merged into the run's `review.json` (re-applying an identical decision is a no-op; a later file adds or replaces decisions for its prospects and keeps the rest), with a fingerprint of each decision and of the company identity and selected role it was made against. `manifest.json` records the hash of `review.json` and each application; hand edits to `review.json` are refused, so change your decisions file and re-run `review`. If the company identity or the selected role's evidence changes, the decision becomes stale and the prospect returns to pending review.
+
+### Draft outputs
+
+| File | Contents |
+|---|---|
+| `send-queue.md`, `drafts.json` | Accepted prospects with a permitted on-domain inbox whose `smtp=valid` row carries the conclusive `control-rejected+target-accepted` reason. Each draft has a `To:` recipient, its review, hypothesis, contact/SMTP evidence and provenance. |
+| `held-queue.md`, `held-drafts.json` | Accepted prospects without a send-ready inbox. No recipient, a hold reason from the best contact row (e.g. `smtp=catchall (hello@…): control-accepted: …`), or `no contact found` / `only off-domain or disallowed inboxes`, the reviewed route, and every contact row as evidence. |
+| `review-summary.md`, `review-summary.json` | Every prospect: `accepted-ready`, `accepted-held`, `rejected`, `deferred`, `pending-review` (including stale reviews) and `unresolved-domain`, with decisions, notes, contact evidence and draft outcome. `review` writes it too. |
+| `draft-errors.json` | Retryable generation failures (the command exits nonzero). |
+| `draft-conflicts.json` | Manually edited drafts whose evidence changed or whose prospect left the queue, with the edited and regenerated text. |
+| `draft-progress.json` | Checkpointed generated text, keyed by the review, prospect, signal, contact and profile fingerprints, so changed evidence never reuses a stale draft and a rerun resumes after failures. |
+
+Each draft's `provenance` holds those fingerprints, its cache key and the hash of the generated subject/body. To revise a draft, edit `subject`/`body` in `drafts.json` or `held-drafts.json`: later runs keep the edit. If its evidence changes, the edit stays in its queue with a visible warning and the regenerated text goes to `draft-conflicts.json`; pass `draft --accept-edits` to keep the edit against the new evidence, or delete the entry to take the regenerated text. If the prospect leaves the queue (rejected, held, stale), the edited text is kept only in `draft-conflicts.json`. Recipients are always re-derived from contact evidence, never from edits. The Markdown queues are rendered from the JSON; a hand-edited Markdown queue is copied to `send-queue.preserved-TIMESTAMP.md` (or `held-queue.…`) before it is rewritten.
+
+Optional `--personalise` on `draft` or `run` fetches company websites and calls the model. Templates and model prompts share the same approved profile facts. Nothing is sent by any command; all sending remains manual.
+
+### Older runs
+
+Runs created before the review stage have no `review.json`, so `draft` treats every prospect as pending review (it says so) and writes no drafts. Their earlier `drafts.json` and `send-queue.md` are copied to `*.preserved-TIMESTAMP.*` before the first new draft run; other files (including manual notes such as `reviewed-drafts.json`) are untouched. To migrate, write a review file and run `outreach review` on the run.
+
+Contact rows with `smtp=valid` but no `smtp_reason` were produced by the old verifier, which could mistake catch-all or inconclusive replies for success. By default they are held with the reason `legacy-smtp-evidence: re-run verify`; re-run `outreach verify --run RUN` to replace them. `draft --allow-legacy-contacts` keeps them eligible instead, and every such draft carries a `LEGACY CONTACT EVIDENCE` warning in `send-queue.md` and `legacy_contact: true` in its provenance.
+
+The old `wire-outreach.py` and `personalise.py` (draft) and `wk_personalise.py` (prepare, or draft with `--draft`) commands are compatibility entry points for these stages and accept the same options; pass `--help` for the required inputs. They no longer discover today's inputs implicitly, and drafting through them also requires recorded review decisions.
 
 ## Reddit
 
