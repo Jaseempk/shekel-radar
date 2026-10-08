@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { OpportunityStore, qualifyPending } from '../lib/opportunities.mjs';
-import { validateVerdicts, modelJSON } from '../lib/qualification.mjs';
+import { validateVerdicts, modelJSON, parseFirstJSON } from '../lib/qualification.mjs';
 import { atomicWrite, integerOption } from '../lib/runtime.mjs';
 
 const record = id => ({ id, text: 'Need CRM help', url: `https://example.com/${id}` });
@@ -57,6 +57,22 @@ test('model transport rejects empty and truncated responses', async () => {
     await assert.rejects(modelJSON('test', { fetcher: async () => ({ ok: true, json: async () => body }) }));
   }
   assert.throws(() => validateVerdicts([{ ...verdict(0), job: true, pain: '', aware: false }], 1, { facebook: true }));
+});
+test('rejected verdicts may omit offer and angle; buyer verdicts may not', () => {
+  const rejected = { i: 0, score: 5, buyer: false, offer: 'none', reason: 'Seller promoting a service', angle: '' };
+  const [x] = validateVerdicts([rejected], 1);
+  assert.equal(x.kind, 'rejected'); assert.equal(x.offer, 'none'); assert.equal(x.angle, '');
+  const [fb] = validateVerdicts([{ ...rejected, offer: '', job: false, aware: false, pain: '' }], 1, { facebook: true });
+  assert.equal(fb.offer, null);
+  assert.throws(() => validateVerdicts([{ ...rejected, buyer: true, offer: 'B' }], 1), /angle/);
+  assert.throws(() => validateVerdicts([{ ...rejected, buyer: true, offer: 'none', angle: 'Ask about CRM' }], 1), /Unknown offer/);
+  assert.throws(() => validateVerdicts([{ ...rejected, reason: ' ' }], 1), /reason/);
+});
+test('model JSON parsing ignores trailing commentary but not broken JSON', () => {
+  assert.deepEqual(parseFirstJSON('[{"i":0,"reason":"has ] and \\" inside"}]\n\nNote: post 3 was ambiguous.'), [{ i: 0, reason: 'has ] and " inside' }]);
+  assert.deepEqual(parseFirstJSON('Here you go:\n[1,2]'), [1, 2]);
+  assert.throws(() => parseFirstJSON('[{"i":0'), /incomplete/);
+  assert.throws(() => parseFirstJSON('no json here'), /no JSON/);
 });
 test('integer options retain defaults when another flag is present', () => {
   assert.equal(integerOption('--top', 40, 1, ['--include-maybe']), 40);
