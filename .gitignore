@@ -3,6 +3,8 @@
 .env.*
 !.env.example
 .wrangler/
+# Personal resume source, documents and generated files stay local
+/resume/
 # Runtime state, captures and rebuildable exports
 state/
 data/
