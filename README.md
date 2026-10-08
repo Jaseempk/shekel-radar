@@ -6,61 +6,60 @@ Every stage is local and reviewable. Collectors save raw candidates before any m
 
 ## How it works
 
-Four pipelines collect signals, score them, and write queues for you to review. Every command goes through `tools/run.py`, and every pipeline uses the shared modules in `lib/`.
+Shekel Radar does the searching and sorting so you can spend your time on the conversations worth having. It works in four steps, and **you stay in control of the last two**.
 
 ```mermaid
 flowchart LR
-    subgraph Sources
-        XFB["X and Facebook<br/>(your logged-in browser)"]
-        ATS["Company job boards<br/>Greenhouse, Ashby, Lever,<br/>Workable, Recruitee, Getro"]
-        WK["Workable search<br/>and job feeds"]
-        RD["Reddit<br/>(niche-radar scraper)"]
-    end
+    F["<b>🔎  1 · Find</b><br/><br/>💬 People asking for help<br/>on X, Facebook and Reddit<br/><br/>🏢 Companies hiring for<br/>repetitive work<br/><br/>💼 Remote engineering jobs"]
+    S["<b>🧠  2 · Sort</b><br/><br/>⭐ Score every lead<br/>and explain why<br/><br/>🧹 Drop sellers, spam,<br/>old and duplicate posts"]
+    R["<b>👀  3 · You review</b><br/><br/>📋 Daily lead lists<br/><br/>🏆 Ranked job shortlist<br/><br/>✍️ Draft emails and replies"]
+    A["<b>🤝  4 · You act</b><br/><br/>Reply, apply or send<br/><br/><b>Always by hand</b>"]
 
-    subgraph Scoring
-        LLM["Model scoring<br/>validated, retryable"]
-        RULES["Rule-based scoring<br/>role fit, location, freshness"]
-        QUAL["Title rules +<br/>job-description check"]
-    end
+    F ==> S ==> R ==> A
 
-    DB[("state/opportunities.sqlite<br/>source of truth")]
-
-    subgraph Output["Output for manual review"]
-        SQ["Social lead queues"]
-        JQ["Ranked job shortlist"]
-        BS["Buyer snapshot"]
-        RQ["Reddit reply drafts"]
-    end
-
-    XFB --> DB --> LLM --> SQ
-    ATS --> DB --> RULES --> JQ
-    WK --> QUAL --> BS
-    RD --> DB
-    LLM --> RQ
-    BS --> OUT["Outreach workflow<br/>(next diagram)"]
+    classDef find fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a8a
+    classDef sort fill:#ede9fe,stroke:#8b5cf6,stroke-width:2px,color:#4c1d95
+    classDef review fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
+    classDef act fill:#dcfce7,stroke:#22c55e,stroke-width:2px,color:#14532d
+    class F find
+    class S sort
+    class R review
+    class A act
 ```
 
-- **Social (X/Facebook):** reads saved searches in your logged-in browser over the Chrome DevTools Protocol, saves every post to SQLite, then scores them in batches of 20. A batch only counts if the model returns one valid verdict per post; otherwise it stays retryable.
-- **Jobs:** polls company job boards and VC talent networks, keeps the last good snapshot when a board fails, and ranks roles by fit, location eligibility, freshness and company stage. No model is involved.
-- **Buyers:** finds companies hiring people for repetitive data or research work. For Workable, it reads the job description to tell real research/data duties apart from in-person or support roles.
-- **Reddit:** ranks help-seeking posts by keywords, drops threads a seller has already answered, then uses a model to qualify the author and draft a reply.
+- **Find:** it checks social posts, job boards and Reddit for people and companies with work you could automate, plus remote jobs you could apply for.
+- **Sort:** it scores each lead, explains the score in one line, and filters out the noise.
+- **You review:** everything lands in simple lists and drafts on your computer.
+- **You act:** nothing is ever posted, sent or applied for automatically.
 
-The outreach workflow turns a buyer snapshot into reviewed drafts. Each stage writes into one run directory, so you can stop and resume between stages.
+### From a job post to a ready email
+
+When a company is hiring someone to do repetitive work by hand, that's a sign they might want it automated. Here's how Shekel Radar turns that signal into an email you can send:
 
 ```mermaid
-flowchart TD
-    A["Buyer snapshot<br/>(Workable JSON)"] --> P["prepare<br/>group by company + source-backed domain"]
-    P --> V["verify<br/>find published emails, SMTP check"]
-    V --> R["review<br/>you accept, reject or defer each company"]
-    R --> D["draft"]
-    D -->|"accepted + verified inbox"| S["send-queue.md<br/>ready for you to send by hand"]
-    D -->|"accepted, no verified inbox"| H["held-queue.md<br/>no recipient; use a contact form or LinkedIn"]
-    D -->|"rejected, deferred or unreviewed"| X["review-summary.md only"]
+flowchart LR
+    A["🏢 A company is hiring<br/>for manual data work"] --> B["🌐 Find its website<br/>and public email"]
+    B --> C["✅ Check the email<br/>really exists"]
+    C --> D{"👀 You decide:<br/>worth contacting?"}
+    D -->|"Yes, email confirmed"| E["📨 Ready-to-send<br/>email draft"]
+    D -->|"Yes, email unconfirmed"| F["📝 Draft for their<br/>contact form or LinkedIn"]
+    D -->|"No, or not yet"| G["🗂️ Kept on file"]
+
+    classDef step fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a8a
+    classDef decide fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
+    classDef good fill:#dcfce7,stroke:#22c55e,stroke-width:2px,color:#14532d
+    classDef hold fill:#ede9fe,stroke:#8b5cf6,stroke-width:2px,color:#4c1d95
+    classDef rest fill:#f1f5f9,stroke:#94a3b8,stroke-width:2px,color:#334155
+    class A,B,C step
+    class D decide
+    class E good
+    class F hold
+    class G rest
 ```
 
-- **verify** only marks an address `valid` when the server rejects a random address on the same domain and then accepts the real one. Catch-all and inconclusive results never reach the send queue.
-- **review** decisions are stored with fingerprints of the evidence. If the company or role changes, the decision goes stale and the company returns to pending review.
-- **draft** keeps your manual edits on later runs, and nothing is ever sent.
+- It only treats an email as confirmed when the company's mail server clearly says that address exists. If it's unsure, the draft waits for a contact form or LinkedIn instead.
+- Nothing gets drafted until you've said yes to that company.
+- If you edit a draft, your edits are kept.
 
 ## Setup
 
