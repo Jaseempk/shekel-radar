@@ -4,6 +4,64 @@ A local toolkit for finding consulting clients and engineering roles, qualifying
 
 Every stage is local and reviewable. Collectors save raw candidates before any model scoring, failures stay retryable instead of being dropped, and SMTP checks only report `valid` on conclusive evidence. Buyer prospects need an explicit review decision before drafting, and companies without a verified inbox go to a separate held queue with no recipient. Nothing is ever sent or posted automatically.
 
+## How it works
+
+Four pipelines collect signals, score them, and write queues for you to review. Every command goes through `tools/run.py`, and every pipeline uses the shared modules in `lib/`.
+
+```mermaid
+flowchart LR
+    subgraph Sources
+        XFB["X and Facebook<br/>(your logged-in browser)"]
+        ATS["Company job boards<br/>Greenhouse, Ashby, Lever,<br/>Workable, Recruitee, Getro"]
+        WK["Workable search<br/>and job feeds"]
+        RD["Reddit<br/>(niche-radar scraper)"]
+    end
+
+    subgraph Scoring
+        LLM["Model scoring<br/>validated, retryable"]
+        RULES["Rule-based scoring<br/>role fit, location, freshness"]
+        QUAL["Title rules +<br/>job-description check"]
+    end
+
+    DB[("state/opportunities.sqlite<br/>source of truth")]
+
+    subgraph Output["Output for manual review"]
+        SQ["Social lead queues"]
+        JQ["Ranked job shortlist"]
+        BS["Buyer snapshot"]
+        RQ["Reddit reply drafts"]
+    end
+
+    XFB --> DB --> LLM --> SQ
+    ATS --> DB --> RULES --> JQ
+    WK --> QUAL --> BS
+    RD --> DB
+    LLM --> RQ
+    BS --> OUT["Outreach workflow<br/>(next diagram)"]
+```
+
+- **Social (X/Facebook):** reads saved searches in your logged-in browser over the Chrome DevTools Protocol, saves every post to SQLite, then scores them in batches of 20. A batch only counts if the model returns one valid verdict per post; otherwise it stays retryable.
+- **Jobs:** polls company job boards and VC talent networks, keeps the last good snapshot when a board fails, and ranks roles by fit, location eligibility, freshness and company stage. No model is involved.
+- **Buyers:** finds companies hiring people for repetitive data or research work. For Workable, it reads the job description to tell real research/data duties apart from in-person or support roles.
+- **Reddit:** ranks help-seeking posts by keywords, drops threads a seller has already answered, then uses a model to qualify the author and draft a reply.
+
+The outreach workflow turns a buyer snapshot into reviewed drafts. Each stage writes into one run directory, so you can stop and resume between stages.
+
+```mermaid
+flowchart TD
+    A["Buyer snapshot<br/>(Workable JSON)"] --> P["prepare<br/>group by company + source-backed domain"]
+    P --> V["verify<br/>find published emails, SMTP check"]
+    V --> R["review<br/>you accept, reject or defer each company"]
+    R --> D["draft"]
+    D -->|"accepted + verified inbox"| S["send-queue.md<br/>ready for you to send by hand"]
+    D -->|"accepted, no verified inbox"| H["held-queue.md<br/>no recipient; use a contact form or LinkedIn"]
+    D -->|"rejected, deferred or unreviewed"| X["review-summary.md only"]
+```
+
+- **verify** only marks an address `valid` when the server rejects a random address on the same domain and then accepts the real one. Catch-all and inconclusive results never reach the send queue.
+- **review** decisions are stored with fingerprints of the evidence. If the company or role changes, the decision goes stale and the company returns to pending review.
+- **draft** keeps your manual edits on later runs, and nothing is ever sent.
+
 ## Setup
 
 - Node **22.22 or newer**. The collectors use built-in `fetch`, WebSocket and SQLite; Node 22 prints an experimental SQLite warning.
